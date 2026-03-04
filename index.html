@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKE — Operation Epic Fury · Live Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ake-navy:#0c1420; --ake-red:#c0271a; --ake-red-lt:#d93a2b;
+    --iran-lt:#e09020; --navy-lt:#2a78cc; --hzb-lt:#a060cc;
+    --apt-lt:#e060e0; --oil-lt:#f0c040; --port-lt:#12c0a8;
+    --white:#ffffff; --offwhite:#e8eaed; --muted:#8a9aaa;
+    --border:rgba(255,255,255,0.10); --panel-bg:rgba(12,20,32,0.96);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100vw;height:100vh;overflow:hidden;font-family:'Barlow',sans-serif;background:var(--ake-navy);}
+  .frame{position:absolute;inset:0;display:flex;flex-direction:column;}
+
+  /* HEADER */
+  .header{flex-shrink:0;background:var(--ake-navy);border-bottom:2px solid var(--ake-red);padding:7px 20px 6px;display:flex;align-items:center;gap:16px;z-index:1000;}
+  .hdr-bar{width:3px;height:36px;background:var(--ake-red);flex-shrink:0;}
+  .hdr-titles{flex:1;}
+  .hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--white);line-height:1;}
+  .hdr-sub{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+  .hdr-meta{text-align:right;flex-shrink:0;border-left:1px solid var(--border);padding-left:16px;display:flex;flex-direction:column;gap:2px;}
+  .hdr-datetime{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;color:var(--offwhite);text-transform:uppercase;}
+  .hdr-asof{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--iran-lt);}
+  .hdr-status{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ake-red-lt);animation:blink 1.8s step-end infinite;}
+  @keyframes blink{50%{opacity:0.2;}}
+
+  /* UPDATE BAR */
+  .update-bar{flex-shrink:0;background:#080f18;border-bottom:1px solid var(--border);padding:5px 20px;display:flex;align-items:center;gap:14px;z-index:999;}
+  .upd-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#2a5a7a;flex-shrink:0;}
+  .upd-status{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .upd-status.loading{color:var(--iran-lt);animation:blink 1s step-end infinite;}
+  .upd-status.ok{color:#2db87a;}
+  .upd-status.err{color:var(--ake-red-lt);}
+  .upd-btn{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--muted);padding:3px 10px;cursor:pointer;border-radius:1px;flex-shrink:0;transition:all 0.15s;}
+  .upd-btn:hover{border-color:rgba(255,255,255,0.35);color:var(--offwhite);}
+  .upd-btn:disabled{opacity:0.35;cursor:default;}
+  .upd-countdown{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:#2a3a4a;flex-shrink:0;}
+
+  /* DAY FILTER BAR */
+  .day-filter-bar{flex-shrink:0;background:#0a1520;border-bottom:1px solid var(--border);padding:5px 20px;display:flex;align-items:center;gap:5px;z-index:998;flex-wrap:wrap;}
+  .df-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#2a4a5a;margin-right:4px;flex-shrink:0;}
+  .df-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 11px;border-radius:1px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s;flex-shrink:0;}
+  .df-btn:hover{border-color:rgba(255,255,255,0.28);color:var(--offwhite);}
+  .df-btn.active{background:rgba(192,39,26,0.18);border-color:var(--ake-red);color:var(--offwhite);}
+  .df-btn.all.active{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.4);color:var(--white);}
+  .df-sep{width:1px;height:16px;background:rgba(255,255,255,0.08);margin:0 2px;flex-shrink:0;}
+  .df-count{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:#2a4a5a;margin-left:auto;flex-shrink:0;}
+
+  /* MAP */
+  #map{flex:1;position:relative;background:#1a2a3a;}
+  .leaflet-tile-pane{filter:brightness(0.58) saturate(0.55) hue-rotate(185deg) contrast(1.05);}
+  #map::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:500;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:80px 80px;}
+  .corner{position:absolute;z-index:600;pointer-events:none;width:18px;height:18px;border-color:rgba(192,39,26,0.45);border-style:solid;}
+  .corner.tl{top:10px;left:10px;border-width:2px 0 0 2px;}
+  .corner.tr{top:10px;right:10px;border-width:2px 2px 0 0;}
+  .corner.bl{bottom:10px;left:10px;border-width:0 0 2px 2px;}
+  .corner.br{bottom:10px;right:10px;border-width:0 2px 2px 0;}
+
+  /* LEGEND */
+  .legend{position:absolute;bottom:20px;left:14px;z-index:700;background:var(--panel-bg);border:1px solid var(--border);border-left:2px solid var(--ake-red);padding:10px 13px;backdrop-filter:blur(6px);min-width:248px;}
+  .legend-title{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:6px;}
+  .legend-section{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#2a4a5a;margin:5px 0 3px;}
+  .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .legend-row:last-child{margin-bottom:0;}
+  .leg-sym{width:17px;height:17px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0;}
+  .leg-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;line-height:1.2;}
+  .leg-sub{font-size:9.5px;color:var(--muted);line-height:1.3;}
+
+  /* BADGES */
+  .day-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:rgba(192,39,26,0.25);border:1px solid rgba(192,39,26,0.5);color:#e08070;padding:1px 5px;border-radius:1px;margin-left:5px;vertical-align:middle;}
+  .new-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:var(--ake-red);color:white;padding:1px 5px;border-radius:1px;margin-left:5px;vertical-align:middle;}
+
+  /* FOOTER */
+  .footer{flex-shrink:0;background:var(--ake-navy);border-top:1px solid var(--border);padding:4px 20px;display:flex;justify-content:space-between;align-items:center;z-index:1000;}
+  .footer-src{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a4a5a;}
+  .footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2a3a4a;}
+
+  /* LEAFLET */
+  .leaflet-control-zoom,.leaflet-control-attribution{display:none!important;}
+  .leaflet-control-scale-line{background:rgba(12,20,32,0.75);border:1px solid rgba(255,255,255,0.12);border-top:none;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:9px;}
+  .leaflet-popup-content-wrapper{background:var(--ake-navy);border:1px solid rgba(255,255,255,0.12);border-radius:2px;box-shadow:0 8px 32px rgba(0,0,0,0.75);}
+  .leaflet-popup-close-button{color:var(--muted)!important;font-size:18px!important;top:6px!important;right:8px!important;}
+  .leaflet-popup-tip-container{display:none;}
+  .leaflet-popup-content{font-family:'Barlow',sans-serif;color:var(--offwhite);margin:12px 14px;max-width:240px;line-height:1.5;font-size:11px;}
+  .p-cat{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:4px;}
+  .p-cat.us{color:var(--ake-red-lt);} .p-cat.iran{color:var(--iran-lt);} .p-cat.hzb{color:var(--hzb-lt);} .p-cat.navy{color:var(--navy-lt);} .p-cat.apt{color:var(--apt-lt);} .p-cat.oil{color:var(--oil-lt);} .p-cat.port{color:var(--port-lt);}
+  .p-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:5px;line-height:1.15;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:5px;}
+  .p-body{font-size:10.5px;color:var(--muted);line-height:1.55;}
+  .p-body b{color:var(--offwhite);}
+  .p-date{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3a5a7a;margin-top:7px;}
+  .map-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.45);background:rgba(12,20,32,0.65);border:1px solid rgba(255,255,255,0.08);padding:2px 6px;white-space:nowrap;pointer-events:none;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="header">
+    <div class="hdr-bar"></div>
+    <div class="hdr-titles">
+      <div class="hdr-title">Operation Epic Fury · Roaring Lion <span id="day-badge-hdr" style="font-size:13px;color:var(--muted);font-weight:400;letter-spacing:1px;"></span></div>
+      <div class="hdr-sub">US–Israel Strikes on Iran &amp; Iranian Retaliation · Live Intelligence Map</div>
+    </div>
+    <div class="hdr-meta">
+      <div class="hdr-datetime" id="live-time">—</div>
+      <div class="hdr-asof" id="last-updated">Initialising…</div>
+      <div class="hdr-status">● Conflict Ongoing</div>
+    </div>
+  </div>
+
+  <div class="update-bar">
+    <span class="upd-label">Intel Feed</span>
+    <span class="upd-status" id="upd-status">Loading…</span>
+    <span class="upd-countdown" id="upd-countdown"></span>
+    <button class="upd-btn" id="upd-btn" onclick="triggerUpdate()" disabled>⟳ Refresh Now</button>
+  </div>
+
+  <div class="day-filter-bar" id="day-filter-bar">
+    <span class="df-label">Filter by Day</span>
+    <button class="df-btn all active" data-day="all" onclick="setDayFilter('all',this)">All Days</button>
+    <div class="df-sep"></div>
+    <span class="df-count" id="df-count"></span>
+  </div>
+
+  <div id="map">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="legend">
+      <div class="legend-title">Map Key</div>
+      <div class="legend-section">Strike Actors</div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--ake-red-lt)">✕</div><div><div class="leg-label" style="color:var(--ake-red-lt)">US / Israel Strike</div><div class="leg-sub">Nuclear, military &amp; leadership</div></div></div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--iran-lt)">▲</div><div><div class="leg-label" style="color:var(--iran-lt)">Iranian Retaliation</div><div class="leg-sub">Missiles &amp; drones across region</div></div></div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--hzb-lt)">◆</div><div><div class="leg-label" style="color:var(--hzb-lt)">Hezbollah / Lebanon Front</div><div class="leg-sub">Rockets + IDF counter-strikes</div></div></div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--navy-lt)">⚓</div><div><div class="leg-label" style="color:var(--navy-lt)">US Carrier Strike Group</div><div class="leg-sub">Lincoln (Arabian Sea) · Ford (E. Med.)</div></div></div>
+      <div class="legend-section">Infrastructure Strikes</div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--apt-lt)">✈</div><div><div class="leg-label" style="color:var(--apt-lt)">Airport Struck</div><div class="leg-sub">Direct missile or drone impact</div></div></div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--oil-lt)">⛽</div><div><div class="leg-label" style="color:var(--oil-lt)">Oil / Energy Infrastructure</div><div class="leg-sub">Refinery, tanker or energy facility</div></div></div>
+      <div class="legend-row"><div class="leg-sym" style="color:var(--port-lt)">⚓</div><div><div class="leg-label" style="color:var(--port-lt)">Port / Maritime Struck</div><div class="leg-sub">Port or vessel struck</div></div></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-src">Sources: AKE · Anthropic Claude (live web search) · CENTCOM · Reuters · AP · Wikipedia · USNI · Al Jazeera · NBC · CNN · TOI · JINSA · CSIS</div>
+    <div class="footer-brand">AKE International · Geopolitical Risk · Live</div>
+  </div>
+</div>
+
+<script>
+var CONFLICT_START = new Date('2026-02-28T00:00:00Z');
+var activeDay = 'all';
+var currentMapData = null;
+var lastMarkerKeys = null;
+var isUpdating = false;
+var updateCount = 0;
+var REFRESH_MS = 30*60*1000;
+var nextRefreshAt = null;
+var countdownTimer = null;
+
+// ── DATE → DAY NUMBER ─────────────────────────────────────────────────────────
+var MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function dateToDay(s){
+  if(!s) return 0;
+  var t=s.toLowerCase(), nums=[];
+  var r=/(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/g, m;
+  while((m=r.exec(t))!==null){var dt=new Date(Date.UTC(2026,MON[m[2]]-1,parseInt(m[1]))); var n=Math.floor((dt-CONFLICT_START)/86400000)+1; if(n>=1) nums.push(n);}
+  var r2=/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*(\d{1,2})/g;
+  while((m=r2.exec(t))!==null){var dt2=new Date(Date.UTC(2026,MON[m[1]]-1,parseInt(m[2]))); var n2=Math.floor((dt2-CONFLICT_START)/86400000)+1; if(n2>=1) nums.push(n2);}
+  return nums.length ? Math.max.apply(null,nums) : 0;
+}
+// Auto-generate day dates from conflict start — works for any future day automatically
+var DAY_DATES={};
+for(var _d=1;_d<=60;_d++){
+  var _dt=new Date(CONFLICT_START.getTime()+(_d-1)*86400000);
+  var _ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  DAY_DATES[_d]=('0'+_dt.getUTCDate()).slice(-2)+' '+_ms[_dt.getUTCMonth()];
+}
+function getDayLabel(n){return 'Day '+n+(DAY_DATES[n]?' · '+DAY_DATES[n]:'');}
+
+// ── ICON FACTORIES ─────────────────────────────────────────────────────────────
+function circ(s,bo,bg,co,sz){sz=sz||27; return L.divIcon({html:'<div style="width:'+sz+'px;height:'+sz+'px;background:'+bg+';border:1.5px solid '+bo+';border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(sz*.42)+'px;font-weight:800;color:'+co+';box-shadow:0 0 10px '+bo+'66,0 2px 6px rgba(0,0,0,.5);font-family:Barlow Condensed,sans-serif;cursor:pointer;">'+s+'</div>',className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-4]});}
+function sqr(s,bo,bg,co,sz){sz=sz||27; return L.divIcon({html:'<div style="width:'+sz+'px;height:'+sz+'px;background:'+bg+';border:1.5px solid '+bo+';border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(sz*.4)+'px;font-weight:800;color:'+co+';box-shadow:0 0 10px '+bo+'66,0 2px 6px rgba(0,0,0,.5);transform:rotate(45deg);cursor:pointer;"><span style="transform:rotate(-45deg);display:block;">'+s+'</span></div>',className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-4]});}
+function dia(s,bo,bg,co,sz){sz=sz||30; var q=sz-6; return L.divIcon({html:'<div style="width:'+sz+'px;height:'+sz+'px;display:flex;align-items:center;justify-content:center;"><div style="width:'+q+'px;height:'+q+'px;background:'+bg+';border:1.5px solid '+bo+';transform:rotate(45deg);box-shadow:0 0 10px '+bo+'66,0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="transform:rotate(-45deg);font-size:'+Math.round(q*.4)+'px;color:'+co+';">'+s+'</span></div></div>',className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-4]});}
+function svg(h,sz){return L.divIcon({html:h,className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2-4]});}
+function pent(g,st,fi,co,sz){sz=sz||32; return svg('<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 40 40" style="cursor:pointer;filter:drop-shadow(0 0 6px '+st+'aa);"><polygon points="20,1 39,15 32,37 8,37 1,15" fill="'+fi+'" stroke="'+st+'" stroke-width="2.5"/><text x="20" y="27" text-anchor="middle" font-size="16" font-family="Barlow Condensed,sans-serif" font-weight="900" fill="'+co+'">'+g+'</text></svg>',sz);}
+function hex(g,st,fi,co,sz){sz=sz||32; return svg('<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 40 40" style="cursor:pointer;filter:drop-shadow(0 0 6px '+st+'aa);"><polygon points="20,1 37,10 37,30 20,39 3,30 3,10" fill="'+fi+'" stroke="'+st+'" stroke-width="2.5"/><text x="20" y="27" text-anchor="middle" font-size="15" font-family="Barlow Condensed,sans-serif" font-weight="900" fill="'+co+'">'+g+'</text></svg>',sz);}
+function oct(g,st,fi,co,sz){sz=sz||32; return svg('<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 40 40" style="cursor:pointer;filter:drop-shadow(0 0 6px '+st+'aa);"><polygon points="14,1 26,1 39,14 39,26 26,39 14,39 1,26 1,14" fill="'+fi+'" stroke="'+st+'" stroke-width="2.5"/><text x="20" y="27" text-anchor="middle" font-size="15" font-family="Barlow Condensed,sans-serif" font-weight="900" fill="'+co+'">'+g+'</text></svg>',sz);}
+
+var ICONS={
+  us:   circ('✕','#c0271a','rgba(192,39,26,0.20)','#d93a2b'),
+  iran: circ('▲','#c47b10','rgba(196,123,16,0.20)','#e09020'),
+  hzb:  sqr('◆','#7b3fa0','rgba(123,63,160,0.20)','#a060cc'),
+  navy: dia('⚓','#1d5c9e','rgba(29,92,158,0.20)','#2a78cc'),
+  apt:  pent('✈','#cc44cc','rgba(204,68,204,0.22)','#f080f0',32),
+  oil:  hex('⛽','#d4a017','rgba(212,160,23,0.22)','#f0c040',32),
+  port: oct('⚓','#0e8a7a','rgba(14,138,122,0.22)','#12c0a8',32),
+};
+var CATS={us:'US / Israel Strike',iran:'Iranian Retaliation',hzb:'Hezbollah / Lebanon',navy:'US Navy Asset',apt:'Airport Struck',oil:'Oil / Energy Infrastructure',port:'Port / Maritime Strike'};
+
+function mkPop(m,isNew){
+  var d=m.day||(dateToDay(m.date));
+  var dtag=d>0?'<span class="day-badge">Day '+d+(DAY_DATES[d]?' · '+DAY_DATES[d]:'')+'</span>':'';
+  var ntag=isNew?'<span class="new-badge">NEW</span>':'';
+  return '<div class="p-cat '+(m.type||'iran')+'">'+(CATS[m.type]||m.type)+'</div>'
+        +'<div class="p-title">'+m.name+dtag+ntag+'</div>'
+        +'<div class="p-body">'+m.body+'</div>'
+        +(m.date?'<div class="p-date">'+m.date+'</div>':'');
+}
+
+// MAP
+var map=L.map('map',{center:[28.5,44.5],zoom:5,zoomControl:false,attributionControl:false,scrollWheelZoom:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:12}).addTo(map);
+L.control.scale({position:'bottomright',imperial:false}).addTo(map);
+var markerLayer=L.layerGroup().addTo(map);
+var labelLayer=L.layerGroup().addTo(map);
+
+// DAY FILTER
+function setDayFilter(day,btn){
+  activeDay=(day==='all')?'all':parseInt(day);
+  document.querySelectorAll('.df-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  if(currentMapData) applyFilter(currentMapData);
+}
+
+function rebuildDayButtons(markers){
+  var days=new Set();
+  markers.forEach(function(m){var d=m.day||(dateToDay(m.date)); if(d>0) days.add(d);});
+  var sorted=Array.from(days).sort(function(a,b){return a-b;});
+  var bar=document.getElementById('day-filter-bar');
+  bar.querySelectorAll('.df-btn:not(.all),.df-sep:not(:first-of-type)').forEach(function(e){e.remove();});
+  var ce=document.getElementById('df-count');
+  bar.removeChild(ce);
+  sorted.forEach(function(d){
+    var sep=document.createElement('div'); sep.className='df-sep'; bar.appendChild(sep);
+    var b=document.createElement('button');
+    b.className='df-btn'+(activeDay===d?' active':'');
+    b.setAttribute('data-day',d);
+    b.textContent=getDayLabel(d);
+    b.onclick=(function(dd,bb){return function(){setDayFilter(dd,bb);};})(d,b);
+    bar.appendChild(b);
+  });
+  bar.appendChild(ce);
+}
+
+function applyFilter(data){
+  var all=data.markers||[];
+  var shown=activeDay==='all'?all:all.filter(function(m){var d=m.day||(dateToDay(m.date)); return d===0||d===activeDay;});
+  markerLayer.clearLayers();
+  labelLayer.clearLayers();
+  shown.forEach(function(m){
+    L.marker([m.lat,m.lng],{icon:ICONS[m.type]||ICONS.iran,zIndexOffset:m._isNew?500:0})
+     .bindPopup(mkPop(m,m._isNew),{maxWidth:260}).addTo(markerLayer);
+  });
+  (data.labels||[]).forEach(function(l){
+    L.marker([l.lat,l.lng],{icon:L.divIcon({html:'<div class="map-label">'+l.text+'</div>',className:'',iconAnchor:l.anchor||[0,0]}),interactive:false,zIndexOffset:-100}).addTo(labelLayer);
+  });
+  document.getElementById('df-count').textContent=shown.length+' / '+all.length+' incidents shown';
+}
+
+function renderMarkers(data,prevKeys){
+  (data.markers||[]).forEach(function(m){m._isNew=prevKeys&&!prevKeys.has(m.lat+'_'+m.lng+'_'+m.name);});
+  currentMapData=data;
+  rebuildDayButtons(data.markers||[]);
+  applyFilter(data);
+}
+
+// CLOCK
+function updateClock(){
+  var n=new Date();
+  var D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var p=function(v){return v<10?'0'+v:v;};
+  document.getElementById('live-time').textContent=D[n.getUTCDay()]+' '+p(n.getUTCDate())+' '+M[n.getUTCMonth()]+' '+n.getUTCFullYear()+' · '+p(n.getUTCHours())+':'+p(n.getUTCMinutes())+' UTC';
+  document.getElementById('day-badge-hdr').textContent='— Day '+(Math.floor((n-CONFLICT_START)/86400000)+1);
+}
+setInterval(updateClock,1000); updateClock();
+
+function startCountdown(ms){
+  nextRefreshAt=Date.now()+ms;
+  if(countdownTimer) clearInterval(countdownTimer);
+  countdownTimer=setInterval(function(){
+    var r=nextRefreshAt-Date.now(); if(r<=0){clearInterval(countdownTimer);return;}
+    var mi=Math.floor(r/60000),s=Math.floor((r%60000)/1000);
+    document.getElementById('upd-countdown').textContent='Next in '+mi+':'+(s<10?'0':'')+s;
+  },1000);
+}
+
+// SYSTEM PROMPT
+var SYS=`You are a geopolitical intelligence analyst for AKE International tracking Operation Epic Fury (US-Israel strikes on Iran from 28 February 2026) and all retaliatory actions.
+
+Return ONLY valid JSON — no markdown, no preamble:
+
+{
+  "summary": "One sentence current situation",
+  "markers": [
+    { "lat": 0.0, "lng": 0.0, "name": "...", "type": "us|iran|hzb|navy|apt|oil|port", "body": "HTML with <b>bold</b>", "date": "e.g. 28 Feb", "day": 1 }
+  ],
+  "labels": [
+    { "lat": 0.0, "lng": 0.0, "text": "...", "anchor": [0, 0] }
+  ]
+}
+
+DAY FIELD (required integer on every marker):
+Day 1 = 28 Feb 2026. Each subsequent day increments by 1 (Day 2 = 01 Mar, Day 3 = 02 Mar, Day 4 = 03 Mar, Day 5 = 04 Mar, etc.).
+Calculate the correct day number for ANY date by counting from 28 Feb 2026. Today's events must use today's correct day number.
+Day 0 = permanent positional markers (carrier groups) not tied to a specific day
+
+TYPES: us=US/Israeli strike inside Iran | iran=Iranian missile/drone retaliation on Gulf/Israel/region | hzb=Hezbollah attacks or IDF strikes on Lebanon | navy=US naval asset | apt=airport struck by missile/drone | oil=oil/energy infrastructure struck | port=port or vessel struck
+
+COVERAGE REQUIRED — include ALL of the following:
+US/Israel strikes on Iran: Tehran (leadership, IRGC HQ, state TV, hospitals), Isfahan (nuclear), Qom/Fordow/Natanz (nuclear), Karaj (Choqa Balk-e drone base), Kermanshah (IRGC), Tabriz (F-4/F-5 jets), Mashhad (missile warehouse), Shiraz, Kerman, Sanandaj/Kurdistan, Bushehr (naval base), Bandar Abbas (naval), Abadan (oil), Kish Island, Andimeshk, Yazd, HESA Isfahan (drone factory), Ahvaz (IRGC HQ), Golestan Palace Tehran (UNESCO site damaged), Minab school strike, Niloofar Square Tehran (civilian casualties)
+
+Iranian retaliation on Gulf/region: Bahrain (US 5th Fleet NSA), Kuwait (Ali Al Salem AB, Victory Base Baghdad, US Embassy Kuwait), Qatar (Al Udeid AB), UAE Dubai (Fairmont hotel, Burj Al Arab, Jebel Ali), UAE Abu Dhabi (Al Dhafra AB), Saudi Arabia (US Embassy Riyadh, Prince Sultan AB, King Khalid Airport, Ras Tanura refinery), Jordan (Muwaffaq Salti AB, Bundeswehr camp), Erbil Iraq (US base, consulate, Al-Harir base), Cyprus (RAF Akrotiri), Tel Aviv Israel, Beit Shemesh Israel, Jerusalem (West Jerusalem), Syria (Ain Tarma/Suwayda missile debris), Oman tanker strike, Masandam Oman tanker, Qatar LNG facilities
+
+Infrastructure: All airports struck (KWI, DXB, AUH, DOH, BAH, EBL), oil targets (Ras Tanura, Abadan refinery, Strait tankers, IRGC Kharg Island area, Qatar LNG), ports (Mina Salman Bahrain, Jebel Ali Dubai, Port of Duqm Oman, Mina Saqr vessel)
+
+Hezbollah/Lebanon: Haifa rockets, IDF strikes Dahiyeh Beirut, Tyre building collapsed, Beqaa Valley, southern Lebanon villages (52+ evacuation orders), PIJ commander killed Beirut
+
+Naval incidents: Kuwait friendly-fire downs 3 x F-15E jets (crew survived), USS Abraham Lincoln (Arabian Sea), USS Gerald R. Ford (E. Med.), French carrier Charles de Gaulle (Mediterranean), UK RAF Typhoon downs Iranian drone over Qatar, Iran claims MQ-9 Reaper downed
+
+Keep body fields concise with key facts in <b>bold</b>. Aim for 55-70 markers total. Labels: Strait of Hormuz (IRGC DECLARED CLOSED), Red Sea, Persian Gulf, Arabian Sea.`;
+
+// API FETCH
+async function fetchLatestIntel(){
+  if(isUpdating) return;
+  isUpdating=true;
+  var btn=document.getElementById('upd-btn');
+  var st=document.getElementById('upd-status');
+  btn.disabled=true; st.className='upd-status loading'; st.textContent='⟳ Querying live intelligence feed…';
+  var now=new Date();
+  var ds=now.toISOString().slice(0,16).replace('T',' ')+' UTC';
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:6000,system:SYS,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:(function(){var conflictDay=Math.floor((now-CONFLICT_START)/86400000)+1; return [{role:'user',content:'Current date/time: '+ds+'\nConflict Day: '+conflictDay+' (Day 1 = 28 Feb 2026)\n\nSearch for ALL latest developments in Operation Epic Fury and Operation True Promise 4 as of right now. Return the complete comprehensive JSON map data with every confirmed strike event, each with the correct "day" number. TODAY is Day '+conflictDay+' — make sure all incidents from today ('+ds.slice(0,10)+') are included with day:'+conflictDay+'. Be exhaustive — cover all theatres: Iran interior, Gulf states, Israel, Lebanon, Iraq, Jordan, Cyprus, Syria, Oman, maritime. Search specifically for new Day '+conflictDay+' incidents not seen on previous days.'}];})()
+      })
+    });
+    if(!res.ok) throw new Error('API '+res.status);
+    var data=await res.json();
+    var txt=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    txt=txt.trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    var js=txt.indexOf('{'),je=txt.lastIndexOf('}');
+    if(js<0||je<0) throw new Error('No JSON found');
+    var md=JSON.parse(txt.slice(js,je+1));
+    var prevKeys=lastMarkerKeys;
+    var nk=new Set(); (md.markers||[]).forEach(function(m){nk.add(m.lat+'_'+m.lng+'_'+m.name);}); lastMarkerKeys=nk;
+    renderMarkers(md,prevKeys); updateCount++;
+    document.getElementById('last-updated').textContent='Updated '+ds;
+    st.className='upd-status ok'; st.textContent='✓ Live — '+(md.markers||[]).length+' markers · '+(md.summary||'');
+    startCountdown(REFRESH_MS);
+  }catch(err){
+    console.error(err); st.className='upd-status err'; st.textContent='✕ '+err.message+' — retrying in 5 min';
+    startCountdown(5*60*1000); if(updateCount===0) renderBaseline();
+  }
+  isUpdating=false; btn.disabled=false;
+  setTimeout(triggerUpdate,REFRESH_MS);
+}
+function triggerUpdate(){fetchLatestIntel();}
+
+// ── COMPREHENSIVE BASELINE ────────────────────────────────────────────────────
+function renderBaseline(){
+ var data={markers:[
+
+  // ════════════════════════════════════════════════
+  // DAY 1 — 28 FEBRUARY 2026: US/ISRAEL STRIKES ON IRAN
+  // ════════════════════════════════════════════════
+  {lat:35.69,lng:51.39,type:'us',day:1,name:'Tehran — Supreme Leader Compound',body:'<b>Khamenei killed</b> along with wife, son Mojtaba, and ~48 senior officials. Khamenei compound destroyed. IRGC headquarters struck by sea-launched Tomahawks. Army HQ, internal security headquarters (Thar-Allah), national TV/radio HQ, multiple command nodes.',date:'28 Feb'},
+  {lat:35.71,lng:51.40,type:'us',day:1,name:'Tehran — Niloofar Square / East Tehran',body:'Multiple residential strikes. <b>2 students killed</b> near Niloofar Square on Day 1; square struck again on Day 3 killing <b>20+ civilians</b>. Piroozi district explosions (east Tehran) Day 2.',date:'28 Feb + 02 Mar'},
+  {lat:35.67,lng:51.31,type:'us',day:1,name:'Tehran — Golestan Palace (UNESCO)',body:'Golestan Palace — UNESCO World Heritage Site — damaged in aftermath of US-Israeli strikes. Mirrored throne room and museum artifacts had been moved to vault pre-conflict (Mehr News).',date:'01 Mar (damage confirmed)'},
+  {lat:35.72,lng:51.48,type:'us',day:1,name:'Tehran — Gandhi & Khatam-al-Anbia Hospitals',body:'<b>Two hospitals struck</b> — Gandhi Hospital and Khatam-al-Anbia (government-linked). WHO confirmed damage to Gandhi. Red Crescent condemned attacks on medical facilities.',date:'28 Feb + 01 Mar'},
+  {lat:32.65,lng:51.67,type:'us',day:1,name:'Isfahan — Nuclear Facilities',body:'Nuclear enrichment facilities and ballistic missile production struck. <b>HESA aircraft manufacturing plant</b> (Shahid-series drone factory) hit in Shahinshahr suburb. Explosions across city.',date:'28 Feb + 01 Mar'},
+  {lat:34.64,lng:50.88,type:'us',day:1,name:'Qom / Fordow / Natanz',body:'<b>Underground nuclear enrichment complexes</b> struck. Natanz site hit — confirmed by Iranian state media. Fordow bunker targeted with deep-penetrating munitions. B-2 bombers used 2,000-lb JDAMs.',date:'28 Feb'},
+  {lat:35.83,lng:50.99,type:'us',day:1,name:'Karaj — Military & Choqa Balk-e Drone Base',body:'Military research facilities struck. <b>Choqa Balk-e drone base</b> (Day 2/3) — satellite imagery confirms storage buildings, bunkers, and drone launchers extensively damaged.',date:'28 Feb + 02 Mar'},
+  {lat:34.33,lng:47.08,type:'us',day:1,name:'Kermanshah — IRGC Bases',body:'IRGC military bases, Imam Ali missile base, regional command infrastructure. Red Crescent branches in Ilam and Kermanshah also struck.',date:'28 Feb'},
+  {lat:38.08,lng:46.29,type:'us',day:1,name:'Tabriz — Air Force Base',body:'Iranian <b>F-4 Phantom and F-5 fighter jets struck on the runway</b> at Tabriz before they could take off. IDF video released showing destruction.',date:'28 Feb'},
+  {lat:36.30,lng:59.60,type:'us',day:1,name:'Mashhad — Missile Warehouse',body:'<b>Missile warehouse in Mashhad destroyed</b> (Iran\'s second city). IRGC missile storage facility reported destroyed — Kian Melli.',date:'01 Mar'},
+  {lat:29.60,lng:52.53,type:'us',day:1,name:'Shiraz — Military Targets',body:'Aerial strikes confirmed in Shiraz. Part of the IDF wave targeting ballistic missile array and air-defence systems across southern Iran.',date:'28 Feb + 01 Mar'},
+  {lat:30.28,lng:57.08,type:'us',day:1,name:'Kerman — Army Aviation Base',body:'<b>Kerman Army Aviation (Havanirouz) base struck</b> at ~06:50 local time. Citizen footage confirmed aftermath.',date:'01 Mar'},
+  {lat:35.32,lng:46.99,type:'us',day:1,name:'Sanandaj / Kurdistan',body:'<b>Multiple waves of strikes</b> on Sanandaj (Kurdistan capital). Qalian military barracks struck. At least 2 civilians killed. Heavy explosions over multiple hours.',date:'28 Feb + 01 Mar'},
+  {lat:28.97,lng:50.84,type:'us',day:1,name:'Bushehr — Naval Air Base',body:'6th Tactical Fighter Base at Bushehr struck. Naval base targeted. <b>No confirmed direct reactor hit</b> (IAEA Day 3), though port of Bushehr hit. Rosatom evacuated ~100 Russian staff.',date:'28 Feb + 01 Mar'},
+  {lat:27.20,lng:56.27,type:'us',day:1,name:'Bandar Abbas — Iranian Navy',body:'Drone carrier <b>IRIS Shahid Bagheri (C110-4)</b> struck at pier. IRIS Makran (441) struck. Multiple frigates (Bayandor, Alvand, Jamaran class) sunk. <b>11 warships total destroyed in 48hrs</b> (CENTCOM). All 11 Gulf of Oman warships eliminated.',date:'28 Feb + 01 Mar'},
+  {lat:30.36,lng:48.29,type:'us',day:1,name:'Abadan — Oil Refinery',body:'<b>Abadan hit by heavy missile strikes</b> — one of Iran\'s largest oil refineries. Major oil infrastructure targeted in Khuzestan province.',date:'01 Mar'},
+  {lat:32.31,lng:48.69,type:'us',day:1,name:'Dezful / Andimeshk — Military Base',body:'Andimeshk military base struck, <b>city power cut</b>. Dezful area also struck. Ammunition depot in Izeh (Qala Tel) destroyed.',date:'01 Mar'},
+  {lat:26.56,lng:54.01,type:'us',day:1,name:'Kish Island — Explosion',body:'<b>Powerful explosion on Kish Island</b> (free-trade zone, south Iran). No detail on specific target. Reported Mizan news channel.',date:'01 Mar'},
+  {lat:32.01,lng:48.70,type:'us',day:1,name:'Ahvaz — IRGC Headquarters',body:'Missiles struck <b>IRGC HQ in Chaharsher district</b> and NAJA (Law Enforcement) hotel. Khuzestan provincial capital. Residents filmed weeping in streets.',date:'01 Mar'},
+  {lat:32.00,lng:54.36,type:'us',day:1,name:'Yazd — Military Garrisons',body:'Explosions near <b>Yazd airport, Vali-Asr garrison, and Al-Ghadir garrison</b>. Multiple citizen reports on social media.',date:'01 Mar'},
+  {lat:27.15,lng:57.08,type:'us',day:1,name:'Minab — Girls\' Elementary School',body:'<b>Girls\' school struck</b>. Iranian sources: 148 students killed, 95 wounded. NYT/Washington Post verified footage. Iranian FM shared aerial photo of rows of graves. Most controversial civilian incident.',date:'28 Feb'},
+  {lat:27.18,lng:56.26,type:'us',day:1,name:'Chah Bahar — Jamaran Corvette',body:'Iranian Jamaran-class corvette <b>sunk at Chah Bahar pier</b> — CENTCOM confirmed. Part of wider naval annihilation campaign.',date:'28 Feb'},
+
+  // ════════════════════════════════════════════════
+  // DAY 1 — IRANIAN RETALIATION: DAY 1 (28 FEB)
+  // ════════════════════════════════════════════════
+  {lat:32.09,lng:34.88,type:'iran',day:1,name:'Tel Aviv, Israel',body:'HaKirya military HQ, Tel Nof AB, defence industrial complex. <b>1 woman killed</b>, 22+ injured in direct hit. Iron Dome strained — some missiles breached. 162 missiles total at Israel.',date:'28 Feb + 01 Mar'},
+  {lat:31.77,lng:35.21,type:'iran',day:1,name:'West Jerusalem — Residential Street',body:'<b>Ballistic missile hit residential street</b> in West Jerusalem. 6 wounded, civilian vehicle destroyed, surrounding road damaged. Unprecedented direct hit in the capital.',date:'28 Feb'},
+  {lat:26.22,lng:50.59,type:'iran',day:1,name:'Manama, Bahrain — US 5th Fleet',body:'US Naval Support Activity Bahrain (5th Fleet HQ) struck by missile. NASA FIRMS detected <b>large fire at NSA Bahrain</b> (satellite). Crowne Plaza hotel drone fire. <b>45 missiles + 9 drones</b> total vs. Bahrain. 3 wounded.',date:'28 Feb + 01 Mar'},
+  {lat:25.08,lng:55.14,type:'iran',day:1,name:'Dubai, UAE',body:'Fairmont The Palm drone strike. Burj Al Arab debris fire. Dubai Parks closed. <b>167 missiles targeted UAE + 209 drones total</b>. UAE intercepted 169/182 missiles. <b>3 killed, 58+ wounded</b>. Explosions heard day 3 also.',date:'28 Feb + 01-03 Mar'},
+  {lat:24.45,lng:54.38,type:'iran',day:1,name:'Abu Dhabi — Al Dhafra AB',body:'Al Dhafra Air Base targeted. Etihad Towers area — debris damage. <b>1 killed, 7 injured</b>. AWS cloud region UAE (ME-CENTRAL-1) suffered power outages + connectivity disruptions.',date:'28 Feb + 01 Mar'},
+  {lat:25.29,lng:51.53,type:'iran',day:1,name:'Doha, Qatar — Al Udeid AB',body:'<b>Al Udeid AB</b> (CENTCOM HQ — largest US base in region) struck. <b>44 missiles + 8 drones vs Qatar</b>. Qatar AF shot down 2 Iranian Sukhoi Su-24 bombers. RAF Typhoon (UK) downed 1 Iranian drone. Qatar LNG facilities struck Day 3.',date:'28 Feb + 01-02 Mar'},
+  {lat:29.38,lng:47.98,type:'iran',day:1,name:'Kuwait — Ali Al Salem AB',body:'Ali Al Salem AB struck. Kuwait intercepted <b>178 ballistic missiles + 384 drones</b> total (state media). US Embassy Kuwait struck Day 3 (smoke seen rising). <b>1 civilian killed, 32 wounded</b> in Iranian strikes on Kuwait.',date:'28 Feb + 01-02 Mar'},
+  {lat:31.95,lng:35.93,type:'iran',day:1,name:'Amman, Jordan — Muwaffaq Salti AB',body:'Muwaffaq Salti AB targeted. <b>Bundeswehr (German) field camp struck — 1 injured.</b> Jordan intercepted 49+ drones + ballistic missiles. Jordan closed airspace nightly. Dense smoke + unconfirmed US F-15 crash reports.',date:'28 Feb + 01 Mar'},
+  {lat:24.69,lng:46.72,type:'iran',day:1,name:'Riyadh, Saudi Arabia — Prince Sultan AB',body:'Prince Sultan AB (US troops) targeted — all intercepted. King Khalid International Airport targeted — intercepted. Saudi Arabia announced it intercepted all Iranian missiles. Statement condemned attacks as "cowardly".',date:'28 Feb + 01 Mar'},
+  {lat:36.19,lng:44.01,type:'iran',day:1,name:'Erbil, Iraq — US Bases',body:'Erbil Int\'l Airport targeted twice. Al-Harir base (US military hub in Erbil) struck by drone. US Consulate struck. <b>Pro-Iran "Guardians of the Blood Brigade"</b> claimed responsibility separately.',date:'28 Feb + 01 Mar'},
+  {lat:33.34,lng:44.36,type:'iran',day:1,name:'Baghdad — Victory Base / US Embassy Area',body:'2 drones targeted US <b>Victory Base near Baghdad Airport</b> — one struck the base. <b>US Embassy area**: smoke seen rising (Day 3). Iraqi security forces tear-gassed pro-Iran protesters outside Green Zone.',date:'28 Feb + 01-02 Mar'},
+  {lat:32.55,lng:44.35,type:'iran',day:1,name:'Jurf al-Nasr / Jurf al-Sakhar, Iraq',body:'Israeli strikes on <b>Kataib Hezbollah HQ</b> (PMF) SW of Baghdad — <b>2 killed, 3-5 wounded</b>. Second strike at Jurf al-Nasr area. Kataib Hezbollah vowed to "begin attacking American bases".',date:'28 Feb + 01 Mar'},
+  {lat:33.55,lng:36.32,type:'iran',day:1,name:'Ain Tarma, Syria (near Damascus)',body:'Iranian missile debris fell on Ain Tarma — <b>man and his 3 daughters injured</b> (SANA). Suwayda industrial area: missile explosion <b>killed 4 people</b>.',date:'28 Feb'},
+
+  // ════════════════════════════════════════════════
+  // DAY 2 — 01 MARCH 2026
+  // ════════════════════════════════════════════════
+  {lat:31.78,lng:35.02,type:'iran',day:2,name:'Beit Shemesh, Israel — Synagogue Strike',body:'Ballistic missile direct hit on synagogue and residential buildings. <b>9 killed (8-9 reported), 49-50 injured</b>. Most lethal single Iranian strike on Israel. Mourners at funeral also sheltered from sirens.',date:'01 Mar'},
+  {lat:26.22,lng:50.59,type:'iran',day:2,name:'Bahrain — Renewed Missile Wave',body:'Fresh wave of Iranian missiles launched simultaneously at Bahrain, Kuwait, Qatar, UAE in early hours of Day 2. <b>Large fire at NSA Bahrain confirmed by NASA satellite.</b> Air raid sirens across Manama.',date:'01-02 Mar'},
+  {lat:25.29,lng:51.53,type:'oil',day:2,name:'Qatar — LNG Facilities (RasGas / Qatargas)',body:'<b>Iranian drones struck Qatar\'s liquefied natural gas (LNG) facilities</b> — production halted. Most significant energy infrastructure strike outside Iran. Qatar heavily dependent on LNG exports.',date:'02 Mar'},
+  {lat:33.89,lng:35.51,type:'hzb',day:2,name:'Beirut — IDF Strikes Dahiyeh',body:'IDF strikes on Dahiyeh (southern Beirut Hezbollah stronghold), Beqaa Valley. <b>52 people killed, 154 wounded</b> (Lebanon Health Ministry Day 2-3). PIJ commander <b>Adham al-Othman killed</b>. Hezbollah MP <b>Mohammad Raad killed</b> (Al Hadath). Al-Manar TV studios struck after evacuation warning.',date:'01-02 Mar'},
+  {lat:33.27,lng:35.20,type:'hzb',day:2,name:'Southern Lebanon — IDF Ground Prep',body:'IDF evacuated <b>52 then 53+ villages</b> in south Lebanon. Strikes on Haris, Nabatieh al-Fawqa, Mayfadoun. Tyre (Sour): <b>high-rise building collapsed</b> (CNN geolocated footage, Day 3). IDF: "all options on the table" for ground offensive.',date:'01-03 Mar'},
+  {lat:32.82,lng:35.00,type:'hzb',day:2,name:'Haifa / Upper Galilee — Hezbollah Rockets',body:'Hezbollah <b>fired rockets at Haifa</b> and IDF base in Upper Galilee — first attack since Nov 2024 ceasefire. IDF declared it "an official declaration of war by Hezbollah." No damage reported from first salvo. Subsequent waves followed.',date:'01-02 Mar'},
+  {lat:26.71,lng:50.04,type:'oil',day:2,name:'Aramco Ras Tanura Refinery, Saudi Arabia',body:'<b>Saudi Aramco Ras Tanura refinery closed</b> after being hit — contained fire. Saudi officials: caused by debris from intercepted Iranian drone. Analysts called it "significant escalation." Saudi Arabia\'s largest oil export terminal.',date:'01 Mar'},
+  {lat:26.19,lng:50.61,type:'port',day:2,name:'Mina Salman Port, Bahrain',body:'Iranian strike on Mina Salman port — fire. Falling debris from intercepted missile struck foreign ship: <b>1 Asian worker killed, 2 seriously injured.</b>',date:'01-02 Mar'},
+  {lat:25.01,lng:55.08,type:'port',day:2,name:'Jebel Ali Port, Dubai',body:'Fire at Jebel Ali from Iranian strike debris. <b>World\'s busiest container port</b> — operations severely disrupted.',date:'01 Mar'},
+  {lat:22.65,lng:59.51,type:'port',day:2,name:'Port of Duqm, Oman',body:'<b>Struck by 2 Iranian drones</b> — 1 expatriate injured. Oman condemned the attack despite being sole GCC member not struck on Day 1.',date:'01 Mar'},
+  {lat:26.20,lng:56.38,type:'port',day:2,name:'Mina Saqr — Vessel Strike',body:'Vessel struck NW of Mina Saqr, UAE. Fire aboard confirmed (UKMTO). Part of IRGC maritime targeting campaign.',date:'01 Mar'},
+  {lat:26.70,lng:56.05,type:'oil',day:2,name:'Strait of Hormuz — Multiple Tanker Strikes',body:'IRGC struck multiple oil tankers. <i>Skylight</i> tanker (Palau-flagged) hit near Oman — <b>4 crew injured</b>, 20-person crew evacuated. IRGC <b>formally declared Strait closed to shipping.</b> Maersk, MSC, Hapag-Lloyd suspended all transits. 3 x US/UK oil tankers hit (Day 3 — OPB).',date:'01-02 Mar'},
+  {lat:23.60,lng:58.60,type:'oil',day:2,name:'Masandam, Oman — Tanker Attack',body:'Oil tanker attacked <b>5 nautical miles off Masandam coast</b> (Oman). Part of IRGC maritime interdiction campaign in Gulf of Oman.',date:'01-02 Mar'},
+
+  // AIRPORTS
+  {lat:29.24,lng:47.97,type:'apt',day:1,name:'Kuwait Int\'l Airport (KWI)',body:'<b>Airport directly targeted</b> by Iranian missiles/drones — confirmed hit. Closed. Boursa Kuwait suspended all trading. Kuwait intercepted 178 ballistic missiles + 384 drones total.',date:'28 Feb + 01 Mar'},
+  {lat:25.25,lng:55.36,type:'apt',day:1,name:'Dubai International (DXB)',body:'Drone strike — Concourse damaged. <b>4 staff injured.</b> Suspended "until further notice." Day 3: limited flights resume. Over 7,700 flights delayed + 2,280 cancelled globally.',date:'28 Feb + 01 Mar'},
+  {lat:24.43,lng:54.65,type:'apt',day:1,name:'Zayed Int\'l, Abu Dhabi (AUH)',body:'Drone strike — intercepted drone debris killed <b>1, injured 7.</b> Suspended. Paphos Airport Cyprus also evacuated (Day 2).',date:'28 Feb + 01 Mar'},
+  {lat:25.27,lng:51.61,type:'apt',day:1,name:'Hamad Int\'l, Doha (DOH)',body:'<b>44 missiles + 8 drones</b> targeted Qatar airspace/airport. Closed. Qatar AF shot down 2 Iranian Su-24 bombers.',date:'28 Feb + 01 Mar'},
+  {lat:26.27,lng:50.63,type:'apt',day:1,name:'Bahrain Int\'l Airport (BAH)',body:'Direct Iranian drone strike on airport. Closed. Bahrain FIR (flight information region) closed.',date:'28 Feb + 01 Mar'},
+  {lat:36.19,lng:44.00,type:'apt',day:1,name:'Erbil Int\'l Airport (EBL)',body:'Targeted twice by Iranian ballistic missiles. US military base and consulate nearby also struck. Drone interception reported.',date:'28 Feb + 01 Mar'},
+
+  // ════════════════════════════════════════════════
+  // DAY 3 — 02 MARCH 2026
+  // ════════════════════════════════════════════════
+  {lat:34.60,lng:32.98,type:'iran',day:3,name:'RAF Akrotiri, Cyprus',body:'<b>Iranian drone struck RAF Akrotiri airfield</b> — UK MoD confirmed minor structural damage, runway hit, no casualties. Families moved to another site. PM Starmer had just granted US use of UK bases hours before. Paphos Airport and Dhekelia also experienced sirens.',date:'02 Mar (early hours)'},
+  {lat:24.69,lng:46.72,type:'iran',day:3,name:'US Embassy Riyadh, Saudi Arabia',body:'<b>Two Iranian drones struck US Embassy in Riyadh</b> — "limited fire and minor damage" (Saudi MoD). Embassy operating normally before strike. Trump: "you will find out soon what the retaliation will be." Saudi 8 drones intercepted near Riyadh + Al-Kharj.',date:'02-03 Mar'},
+  {lat:29.38,lng:47.98,type:'iran',day:3,name:'Kuwait — Friendly Fire Incident (F-15E)',body:'Kuwait air defenses <b>mistakenly shot down 3 US F-15E Strike Eagles</b> during Iranian attack involving aircraft, ballistic missiles and drones. All 6 pilots ejected safely. CENTCOM confirmed "apparent friendly fire incident."',date:'02 Mar'},
+  {lat:35.69,lng:51.39,type:'us',day:3,name:'Tehran — Continuing Strikes Day 3',body:'Continued waves of strikes on Tehran overnight. <b>20+ civilians killed at Niloofar Square</b> (second strike). Late on 2 March: <b>1,300 Iranian military killed</b> in total (Hengaw estimate). Total Iranian Red Crescent civilian toll: <b>555 killed in 131 cities</b>.',date:'02 Mar'},
+  {lat:29.60,lng:52.53,type:'us',day:3,name:'Shiraz + Kerman — Day 3 Strikes',body:'Aerial strikes on Shiraz and Kerman confirmed (AloNews). Part of ongoing systematic degradation campaign across all Iranian provinces.',date:'01-02 Mar'},
+
+  // ════════════════════════════════════════════════
+  // DAY 4 — 03 MARCH 2026
+  // ════════════════════════════════════════════════
+  {lat:35.69,lng:51.39,type:'us',day:4,name:'Tehran — Day 4 Strikes incl. Presidential Office',body:'IDF conducted simultaneous strikes on <b>Tehran and Beirut</b>. Israel struck Iranian presidential office. B-2 stealth bombers targeting IRGC command-and-control nodes + weapon depots + rocket assembly facility (CBS). Over <b>2,000 targets hit in Iran</b> since Day 1 (Pentagon). Red Crescent: <b>787 killed in Iran</b>. Total military killed: ~1,300 (Hengaw). Dow Jones fell 1,000+ points.',date:'03 Mar'},
+  {lat:33.73,lng:51.65,type:'us',day:4,name:'Natanz FEP — IAEA Confirms Damage',body:'<b>IAEA confirmed "some recent damage" to entrance buildings</b> of Natanz underground Fuel Enrichment Plant (satellite imagery). "No radiological consequence expected." First nuclear site confirmed hit. Natanz had already been severely damaged in June 2025 Midnight Hammer operation.',date:'03 Mar'},
+  {lat:35.32,lng:46.99,type:'us',day:4,name:'Sanandaj — Continued Strikes',body:'Ongoing strikes targeting Sanandaj (Kurdistan capital). <b>At least 2 civilians killed</b> confirmed (Fars News). Military barracks and command infrastructure targeted.',date:'03 Mar'},
+  {lat:33.89,lng:35.51,type:'hzb',day:4,name:'Beirut Dahiyeh — IDF Strikes + Ground Troops Ordered',body:'IDF conducted strikes on Dahiyeh including <b>Al-Manar TV studios</b>. Israeli PM Netanyahu and Defence Minister Katz authorised military to "<b>advance and seize additional controlling areas in Lebanon.</b>" IDF struck 70+ Hezbollah weapons storage facilities. Lebanon banned Hezbollah military activities. <b>30,000+ displaced</b> (UNHCR). 50 killed + 300 injured in Lebanese strikes (Lebanese Health Ministry).',date:'03 Mar'},
+  {lat:33.55,lng:35.38,type:'hzb',day:4,name:'Beirut — Hezbollah Intel Chief Killed',body:'IDF: "precise strike in Beirut" killed <b>Hussein Makled</b> — head of Hezbollah\'s intelligence headquarters. Hezbollah hit Ramat David airbase in northern Israel with a drone swarm at dawn, targeting radar sites and control rooms.',date:'03 Mar'},
+  {lat:34.00,lng:36.22,type:'hzb',day:4,name:'Beqaa Valley, Lebanon — IDF Strikes',body:'IDF struck Hezbollah targets across eastern Beqaa Valley. <b>Baalbek targeted</b> (Al Jazeera). Lebanese army evacuated border positions — withdrew from at least 7 forward operating positions (Reuters).',date:'03 Mar'},
+  {lat:33.27,lng:35.20,type:'hzb',day:4,name:'Southern Lebanon — IDF Ground Crossing',body:'IDF deployed troops across Lebanese border — "<b>forward defence</b>" operation. IDF: "achieved operational control" along several strategic border points. 80+ villages ordered to evacuate. Sirens in Safed + Galilee from Hezbollah rockets.',date:'03 Mar'},
+  {lat:24.69,lng:46.72,type:'iran',day:4,name:'US Embassy Riyadh + CIA Station — Drone Strikes',body:'<b>Two Iranian drones struck US Embassy Riyadh</b> — limited fire and minor damage (Saudi MoD). Separately: <b>Iranian drone struck CIA station in Saudi Arabia</b> causing damage — no casualties (two US officials to CBS News; CIA/Saudi Embassy not commenting). US Embassy Saudi Arabia closed. Jordan: US Embassy in Amman evacuated "due to threat."',date:'03 Mar'},
+  {lat:26.30,lng:50.21,type:'iran',day:4,name:'Dhahran — Imminent Strike Warning',body:'US Embassy warned of "<b>imminent missile and UAV attacks</b>" on Dhahran. Consulate ordered citizens: "Take cover on lowest available floor, away from windows." Dhahran hosts Saudi Aramco HQ and major oil infrastructure.',date:'03 Mar'},
+  {lat:29.38,lng:47.98,type:'iran',day:4,name:'Kuwait — Shuaiba Port: 6 US KIA Confirmed',body:'<b>Six US service members killed</b> at Shuaiba port — Pentagon confirmed + named four: all from <b>103rd Sustainment Command, US Army Reserve, Des Moines</b>. Hit by Iranian drone strike on US tactical operations centre (triple-wide trailer). 18 seriously wounded total. Also: <b>11-year-old Kuwaiti girl killed</b> by falling missile shrapnel (Kuwait Health Ministry).',date:'03 Mar'},
+  {lat:29.07,lng:48.08,type:'oil',day:4,name:'Mina al-Ahmadi Refinery + US Embassy Kuwait',body:'Debris from Iranian intercept struck <b>Mina al-Ahmadi refinery</b> — 2 workers injured. US Embassy Kuwait <b>closed indefinitely</b>. Kuwait totals: 178 ballistic missiles + 384 drones intercepted. 27 Kuwaiti soldiers injured.',date:'03 Mar'},
+  {lat:25.29,lng:51.53,type:'iran',day:4,name:'Qatar — Warns Attacks "Will Not Go Unanswered"',body:'Qatar FM: attacks "will not go unanswered, all options are open." Qatar totals: <b>90 ballistic missiles, 24 drones, 3 cruise missiles, 2 Su-24 bombers intercepted.</b> Qatar AF shot down 2 Iranian Su-24s. GCC stated "option to respond to Iranian attacks."',date:'03 Mar'},
+  {lat:25.01,lng:55.08,type:'iran',day:4,name:'Dubai — US Consulate Hit + UAE Totals',body:'Drone struck <b>parking lot of US Consulate Dubai</b> — fire, no injuries (Rubio confirmed). UAE Day 4 totals: <b>186 ballistic missiles launched, 172 destroyed; 812 drones, 755 intercepted</b>. 3 dead (Pakistani, Nepali, Bangladeshi nationalities), 68 injured. Two AWS data centres in UAE directly struck, one in Bahrain affected — causing <b>AWS cloud outages in Middle East region</b> (S3, EC2, DynamoDB).',date:'03 Mar'},
+  {lat:25.13,lng:56.34,type:'oil',day:4,name:'Fujairah Oil Zone, UAE + UKMTO Incident',body:'Fire in <b>Fujairah oil industry zone</b> from drone debris (Fujairah media office/Reuters). UKMTO: vessel struck <b>7 nautical miles east of Fujairah</b> — unknown projectile, steel plating damage, all crew safe.',date:'03 Mar'},
+  {lat:23.60,lng:59.38,type:'oil',day:4,name:'Gulf of Oman — UKMTO Incident 137nm E of Muscat',body:'UKMTO reported vessel struck <b>137 nautical miles east of Muscat</b> — loud explosion in proximity, smoke seen. Vessel and crew reported safe.',date:'03 Mar'},
+  {lat:26.20,lng:56.38,type:'oil',day:4,name:'Gulf of Oman — Stena Imperative Tanker',body:'US-flagged oil tanker <b>Stena Imperative</b> struck in Port of Bahrain by two Iranian projectiles — fire extinguished, crew evacuated (Reuters/Vanguard Tech). <b>150 freight ships stalled behind Strait of Hormuz.</b> Oil prices heading toward $100/barrel (analysts). US gas prices rose 12 cents/gallon in one day — largest spike in 4 years.',date:'03 Mar'},
+  {lat:32.09,lng:34.88,type:'iran',day:4,name:'Central Israel — Cluster Munition Strike',body:'Iran fired missiles at central Israel with alleged <b>cluster sub-munitions</b> (IDF war crime accusation). MDA: 5 injured including one woman in moderate condition. Red alerts in Tel Aviv area. Lebanon PM formally banned Hezbollah military activity.',date:'03 Mar'},
+
+  // ════════════════════════════════════════════════
+  // DAY 5 — 04 MARCH 2026
+  // ════════════════════════════════════════════════
+  {lat:33.89,lng:35.51,type:'hzb',day:5,name:'Beirut Dahiyeh — Day 5 Strikes',body:'IDF struck Dahiyeh again including area near <b>presidential palace</b> — first time strikes targeted this neighbourhood. AFP smoke footage confirmed (Dawn.com). Ashkelon: Iranian missile intercepted.',date:'04 Mar'},
+  {lat:33.85,lng:35.56,type:'hzb',day:5,name:'Beirut Hazmieh — Comfort Hotel Strike',body:'Israeli airstrike hit <b>Comfort Hotel in Hazmieh</b> — eastern suburb of Beirut. First responders inspected damage (AFP/AFPTV footage verified). Hazmieh is a predominantly Christian neighbourhood near the Defence Ministry.',date:'04 Mar'},
+  {lat:34.00,lng:36.22,type:'hzb',day:5,name:'Baalbek — Residential Building Strike',body:'Israeli airstrike hit <b>four-storey residential building in Baalbek</b> — several people killed. Rescue teams pulled families from rubble (Lebanon NNA/Haaretz). IDF ordered evacuation of 16 villages in southern Lebanon overnight.',date:'04 Mar'},
+  {lat:32.68,lng:35.73,type:'hzb',day:5,name:'Ramat David Airbase — Hezbollah Drone Swarm',body:'Hezbollah fired a <b>drone swarm at Ramat David Airbase</b> in northern Israel, targeting radar sites and control rooms. Sirens sounded in Safed, Galilee panhandle, and border area. Most intercepted; IDF confirmed one rocket impacted area.',date:'04 Mar'},
+  {lat:31.79,lng:35.21,type:'iran',day:5,name:'Ashkelon — Iranian Missile Intercepted',body:'Missile launched from Iran intercepted over <b>Ashkelon area</b> (AFP/Dawn.com). Ben Gurion Airport to partially reopen to repatriate Israelis stranded abroad (Transport Minister Miri Regev).',date:'04 Mar'},
+  {lat:31.89,lng:35.00,type:'iran',day:5,name:'Amman, Jordan — US Embassy Evacuated',body:'<b>US Embassy in Amman evacuated</b> "due to a threat" (State Dept security alert). Non-emergency personnel instructed to shelter-in-place. "The embassy has instructed all Mission personnel to shelter-in-place. We recommend all Americans do the same." State Dept facilitating charter flights from Jordan.',date:'04 Mar'},
+
+  // ════════════════════════════════════════════════
+  // NAVAL / PERMANENT ASSETS (Day 0)
+  // ════════════════════════════════════════════════
+  {lat:21.50,lng:63.00,type:'navy',day:0,name:'USS Abraham Lincoln (CVN-72)',body:'Arabian Sea. <b>CVW-9</b>: F-35C, F/A-18E/F, EA-18G Growlers. Tomahawk launches documented (USS Spruance + USS Thomas Hudner). Continuous strike sorties since conflict opened.',date:'Arabian Sea'},
+  {lat:33.20,lng:33.80,type:'navy',day:0,name:'USS Gerald R. Ford (CVN-78)',body:'Eastern Mediterranean. <b>CVW-8</b> continuous strike sorties. 14 KC-46A tankers at Ben Gurion AB extending Iran strike range. CENTCOM: "largest regional concentration of US military firepower in a generation."',date:'Eastern Mediterranean'},
+  {lat:37.00,lng:22.00,type:'navy',day:0,name:'French FS Charles de Gaulle (R91)',body:'French carrier strike group departed Baltic deployment — <b>redirected to Mediterranean</b> amid conflict. Mixed reports on whether it entered active combat zone.',date:'Mediterranean'},
+
+ ],labels:[
+  {lat:26.52,lng:56.1,  text:'⚠ Strait of Hormuz — IRGC DECLARED CLOSED TO SHIPPING',anchor:[145,8]},
+  {lat:14.50,lng:43.00, text:'⚠ Red Sea — Houthis Monitoring · Cape of Good Hope Rerouting Active',anchor:[148,8]},
+  {lat:27.50,lng:51.50, text:'Persian Gulf',anchor:[34,6]},
+  {lat:20.00,lng:60.00, text:'Arabian Sea',anchor:[34,6]},
+  {lat:38.00,lng:33.00, text:'Eastern Mediterranean',anchor:[55,6]},
+  {lat:22.00,lng:39.50, text:'Red Sea',anchor:[24,6]},
+ ]};
+
+  renderMarkers(data,null);
+  lastMarkerKeys=new Set();
+  (data.markers||[]).forEach(function(m){lastMarkerKeys.add(m.lat+'_'+m.lng+'_'+m.name);});
+  document.getElementById('last-updated').textContent='Comprehensive baseline — 28 Feb to 04 Mar · Awaiting live feed…';
+  document.getElementById('upd-status').textContent='Baseline: '+(data.markers||[]).length+' incidents loaded · Fetching live updates…';
+}
+
+// BOOT
+renderBaseline();
+document.getElementById('upd-btn').disabled=false;
+setTimeout(fetchLatestIntel,1800);
+</script>
+</body>
+</html>
