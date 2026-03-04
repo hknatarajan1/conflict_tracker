@@ -31,17 +31,7 @@
   .hdr-status{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ake-red-lt);animation:blink 1.8s step-end infinite;}
   @keyframes blink{50%{opacity:0.2;}}
 
-  /* UPDATE BAR */
-  .update-bar{flex-shrink:0;background:#080f18;border-bottom:1px solid var(--border);padding:5px 20px;display:flex;align-items:center;gap:14px;z-index:999;}
-  .upd-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#2a5a7a;flex-shrink:0;}
-  .upd-status{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .upd-status.loading{color:var(--iran-lt);animation:blink 1s step-end infinite;}
-  .upd-status.ok{color:#2db87a;}
-  .upd-status.err{color:var(--ake-red-lt);}
-  .upd-btn{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--muted);padding:3px 10px;cursor:pointer;border-radius:1px;flex-shrink:0;transition:all 0.15s;}
-  .upd-btn:hover{border-color:rgba(255,255,255,0.35);color:var(--offwhite);}
-  .upd-btn:disabled{opacity:0.35;cursor:default;}
-  .upd-countdown{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:#2a3a4a;flex-shrink:0;}
+  /* UPDATE BAR - REMOVED */
 
   /* DAY FILTER BAR */
   .day-filter-bar{flex-shrink:0;background:#0a1520;border-bottom:1px solid var(--border);padding:5px 20px;display:flex;align-items:center;gap:5px;z-index:998;flex-wrap:wrap;}
@@ -113,12 +103,7 @@
     </div>
   </div>
 
-  <div class="update-bar">
-    <span class="upd-label">Intel Feed</span>
-    <span class="upd-status" id="upd-status">Loading…</span>
-    <span class="upd-countdown" id="upd-countdown"></span>
-    <button class="upd-btn" id="upd-btn" onclick="triggerUpdate()" disabled>⟳ Refresh Now</button>
-  </div>
+
 
   <div class="day-filter-bar" id="day-filter-bar">
     <span class="df-label">Filter by Day</span>
@@ -155,11 +140,6 @@ var CONFLICT_START = new Date('2026-02-28T00:00:00Z');
 var activeDay = 'all';
 var currentMapData = null;
 var lastMarkerKeys = null;
-var isUpdating = false;
-var updateCount = 0;
-var REFRESH_MS = 30*60*1000;
-var nextRefreshAt = null;
-var countdownTimer = null;
 
 // ── DATE → DAY NUMBER ─────────────────────────────────────────────────────────
 var MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
@@ -278,90 +258,6 @@ function updateClock(){
 }
 setInterval(updateClock,1000); updateClock();
 
-function startCountdown(ms){
-  nextRefreshAt=Date.now()+ms;
-  if(countdownTimer) clearInterval(countdownTimer);
-  countdownTimer=setInterval(function(){
-    var r=nextRefreshAt-Date.now(); if(r<=0){clearInterval(countdownTimer);return;}
-    var mi=Math.floor(r/60000),s=Math.floor((r%60000)/1000);
-    document.getElementById('upd-countdown').textContent='Next in '+mi+':'+(s<10?'0':'')+s;
-  },1000);
-}
-
-// SYSTEM PROMPT
-var SYS=`You are a geopolitical intelligence analyst for AKE International tracking Operation Epic Fury (US-Israel strikes on Iran from 28 February 2026) and all retaliatory actions.
-
-Return ONLY valid JSON — no markdown, no preamble:
-
-{
-  "summary": "One sentence current situation",
-  "markers": [
-    { "lat": 0.0, "lng": 0.0, "name": "...", "type": "us|iran|hzb|navy|apt|oil|port", "body": "HTML with <b>bold</b>", "date": "e.g. 28 Feb", "day": 1 }
-  ],
-  "labels": [
-    { "lat": 0.0, "lng": 0.0, "text": "...", "anchor": [0, 0] }
-  ]
-}
-
-DAY FIELD (required integer on every marker):
-Day 1 = 28 Feb 2026. Each subsequent day increments by 1 (Day 2 = 01 Mar, Day 3 = 02 Mar, Day 4 = 03 Mar, Day 5 = 04 Mar, etc.).
-Calculate the correct day number for ANY date by counting from 28 Feb 2026. Today's events must use today's correct day number.
-Day 0 = permanent positional markers (carrier groups) not tied to a specific day
-
-TYPES: us=US/Israeli strike inside Iran | iran=Iranian missile/drone retaliation on Gulf/Israel/region | hzb=Hezbollah attacks or IDF strikes on Lebanon | navy=US naval asset | apt=airport struck by missile/drone | oil=oil/energy infrastructure struck | port=port or vessel struck
-
-COVERAGE REQUIRED — include ALL of the following:
-US/Israel strikes on Iran: Tehran (leadership, IRGC HQ, state TV, hospitals), Isfahan (nuclear), Qom/Fordow/Natanz (nuclear), Karaj (Choqa Balk-e drone base), Kermanshah (IRGC), Tabriz (F-4/F-5 jets), Mashhad (missile warehouse), Shiraz, Kerman, Sanandaj/Kurdistan, Bushehr (naval base), Bandar Abbas (naval), Abadan (oil), Kish Island, Andimeshk, Yazd, HESA Isfahan (drone factory), Ahvaz (IRGC HQ), Golestan Palace Tehran (UNESCO site damaged), Minab school strike, Niloofar Square Tehran (civilian casualties)
-
-Iranian retaliation on Gulf/region: Bahrain (US 5th Fleet NSA), Kuwait (Ali Al Salem AB, Victory Base Baghdad, US Embassy Kuwait), Qatar (Al Udeid AB), UAE Dubai (Fairmont hotel, Burj Al Arab, Jebel Ali), UAE Abu Dhabi (Al Dhafra AB), Saudi Arabia (US Embassy Riyadh, Prince Sultan AB, King Khalid Airport, Ras Tanura refinery), Jordan (Muwaffaq Salti AB, Bundeswehr camp), Erbil Iraq (US base, consulate, Al-Harir base), Cyprus (RAF Akrotiri), Tel Aviv Israel, Beit Shemesh Israel, Jerusalem (West Jerusalem), Syria (Ain Tarma/Suwayda missile debris), Oman tanker strike, Masandam Oman tanker, Qatar LNG facilities
-
-Infrastructure: All airports struck (KWI, DXB, AUH, DOH, BAH, EBL), oil targets (Ras Tanura, Abadan refinery, Strait tankers, IRGC Kharg Island area, Qatar LNG), ports (Mina Salman Bahrain, Jebel Ali Dubai, Port of Duqm Oman, Mina Saqr vessel)
-
-Hezbollah/Lebanon: Haifa rockets, IDF strikes Dahiyeh Beirut, Tyre building collapsed, Beqaa Valley, southern Lebanon villages (52+ evacuation orders), PIJ commander killed Beirut
-
-Naval incidents: Kuwait friendly-fire downs 3 x F-15E jets (crew survived), USS Abraham Lincoln (Arabian Sea), USS Gerald R. Ford (E. Med.), French carrier Charles de Gaulle (Mediterranean), UK RAF Typhoon downs Iranian drone over Qatar, Iran claims MQ-9 Reaper downed
-
-Keep body fields concise with key facts in <b>bold</b>. Aim for 55-70 markers total. Labels: Strait of Hormuz (IRGC DECLARED CLOSED), Red Sea, Persian Gulf, Arabian Sea.`;
-
-// API FETCH
-async function fetchLatestIntel(){
-  if(isUpdating) return;
-  isUpdating=true;
-  var btn=document.getElementById('upd-btn');
-  var st=document.getElementById('upd-status');
-  btn.disabled=true; st.className='upd-status loading'; st.textContent='⟳ Querying live intelligence feed…';
-  var now=new Date();
-  var ds=now.toISOString().slice(0,16).replace('T',' ')+' UTC';
-  try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:6000,system:SYS,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:(function(){var conflictDay=Math.floor((now-CONFLICT_START)/86400000)+1; return [{role:'user',content:'Current date/time: '+ds+'\nConflict Day: '+conflictDay+' (Day 1 = 28 Feb 2026)\n\nSearch for ALL latest developments in Operation Epic Fury and Operation True Promise 4 as of right now. Return the complete comprehensive JSON map data with every confirmed strike event, each with the correct "day" number. TODAY is Day '+conflictDay+' — make sure all incidents from today ('+ds.slice(0,10)+') are included with day:'+conflictDay+'. Be exhaustive — cover all theatres: Iran interior, Gulf states, Israel, Lebanon, Iraq, Jordan, Cyprus, Syria, Oman, maritime. Search specifically for new Day '+conflictDay+' incidents not seen on previous days.'}];})()
-      })
-    });
-    if(!res.ok) throw new Error('API '+res.status);
-    var data=await res.json();
-    var txt=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    txt=txt.trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-    var js=txt.indexOf('{'),je=txt.lastIndexOf('}');
-    if(js<0||je<0) throw new Error('No JSON found');
-    var md=JSON.parse(txt.slice(js,je+1));
-    var prevKeys=lastMarkerKeys;
-    var nk=new Set(); (md.markers||[]).forEach(function(m){nk.add(m.lat+'_'+m.lng+'_'+m.name);}); lastMarkerKeys=nk;
-    renderMarkers(md,prevKeys); updateCount++;
-    document.getElementById('last-updated').textContent='Updated '+ds;
-    st.className='upd-status ok'; st.textContent='✓ Live — '+(md.markers||[]).length+' markers · '+(md.summary||'');
-    startCountdown(REFRESH_MS);
-  }catch(err){
-    console.error(err); st.className='upd-status err'; st.textContent='✕ '+err.message+' — retrying in 5 min';
-    startCountdown(5*60*1000); if(updateCount===0) renderBaseline();
-  }
-  isUpdating=false; btn.disabled=false;
-  setTimeout(triggerUpdate,REFRESH_MS);
-}
-function triggerUpdate(){fetchLatestIntel();}
 
 // ── COMPREHENSIVE BASELINE ────────────────────────────────────────────────────
 function renderBaseline(){
@@ -371,25 +267,26 @@ function renderBaseline(){
   // DAY 1 — 28 FEBRUARY 2026: US/ISRAEL STRIKES ON IRAN
   // ════════════════════════════════════════════════
   {lat:35.69,lng:51.39,type:'us',day:1,name:'Tehran — Supreme Leader Compound',body:'<b>Khamenei killed</b> along with wife, son Mojtaba, and ~48 senior officials. Khamenei compound destroyed. IRGC headquarters struck by sea-launched Tomahawks. Army HQ, internal security headquarters (Thar-Allah), national TV/radio HQ, multiple command nodes.',date:'28 Feb'},
-  {lat:35.71,lng:51.40,type:'us',day:1,name:'Tehran — Niloofar Square / East Tehran',body:'Multiple residential strikes. <b>2 students killed</b> near Niloofar Square on Day 1; square struck again on Day 3 killing <b>20+ civilians</b>. Piroozi district explosions (east Tehran) Day 2.',date:'28 Feb + 02 Mar'},
-  {lat:35.67,lng:51.31,type:'us',day:1,name:'Tehran — Golestan Palace (UNESCO)',body:'Golestan Palace — UNESCO World Heritage Site — damaged in aftermath of US-Israeli strikes. Mirrored throne room and museum artifacts had been moved to vault pre-conflict (Mehr News).',date:'01 Mar (damage confirmed)'},
+  {lat:35.71,lng:51.40,type:'us',day:1,name:'Tehran — Niloofar Square (Day 1)',body:'Residential strikes in east Tehran. <b>2 students killed</b> near Niloofar Square. Piroozi district explosions.',date:'28 Feb'},
+  {lat:35.71,lng:51.42,type:'us',day:3,name:'Tehran — Niloofar Square (Day 3)',body:'Second strike on Niloofar Square. <b>20+ civilians killed</b> in densely populated area. Second deadliest civilian incident in Tehran.',date:'02 Mar'},
+  {lat:35.67,lng:51.31,type:'us',day:2,name:'Tehran — Golestan Palace (UNESCO)',body:'Golestan Palace — UNESCO World Heritage Site — damaged in aftermath of US-Israeli strikes. Mirrored throne room and museum artifacts had been moved to vault pre-conflict (Mehr News).',date:'01 Mar (damage confirmed)'},
   {lat:35.72,lng:51.48,type:'us',day:1,name:'Tehran — Gandhi & Khatam-al-Anbia Hospitals',body:'<b>Two hospitals struck</b> — Gandhi Hospital and Khatam-al-Anbia (government-linked). WHO confirmed damage to Gandhi. Red Crescent condemned attacks on medical facilities.',date:'28 Feb + 01 Mar'},
   {lat:32.65,lng:51.67,type:'us',day:1,name:'Isfahan — Nuclear Facilities',body:'Nuclear enrichment facilities and ballistic missile production struck. <b>HESA aircraft manufacturing plant</b> (Shahid-series drone factory) hit in Shahinshahr suburb. Explosions across city.',date:'28 Feb + 01 Mar'},
   {lat:34.64,lng:50.88,type:'us',day:1,name:'Qom / Fordow / Natanz',body:'<b>Underground nuclear enrichment complexes</b> struck. Natanz site hit — confirmed by Iranian state media. Fordow bunker targeted with deep-penetrating munitions. B-2 bombers used 2,000-lb JDAMs.',date:'28 Feb'},
-  {lat:35.83,lng:50.99,type:'us',day:1,name:'Karaj — Military & Choqa Balk-e Drone Base',body:'Military research facilities struck. <b>Choqa Balk-e drone base</b> (Day 2/3) — satellite imagery confirms storage buildings, bunkers, and drone launchers extensively damaged.',date:'28 Feb + 02 Mar'},
+  {lat:35.83,lng:50.99,type:'us',day:3,name:'Karaj — Military & Choqa Balk-e Drone Base',body:'Military research facilities struck. <b>Choqa Balk-e drone base</b> (Day 2/3) — satellite imagery confirms storage buildings, bunkers, and drone launchers extensively damaged.',date:'28 Feb + 02 Mar'},
   {lat:34.33,lng:47.08,type:'us',day:1,name:'Kermanshah — IRGC Bases',body:'IRGC military bases, Imam Ali missile base, regional command infrastructure. Red Crescent branches in Ilam and Kermanshah also struck.',date:'28 Feb'},
   {lat:38.08,lng:46.29,type:'us',day:1,name:'Tabriz — Air Force Base',body:'Iranian <b>F-4 Phantom and F-5 fighter jets struck on the runway</b> at Tabriz before they could take off. IDF video released showing destruction.',date:'28 Feb'},
-  {lat:36.30,lng:59.60,type:'us',day:1,name:'Mashhad — Missile Warehouse',body:'<b>Missile warehouse in Mashhad destroyed</b> (Iran\'s second city). IRGC missile storage facility reported destroyed — Kian Melli.',date:'01 Mar'},
+  {lat:36.30,lng:59.60,type:'us',day:2,name:'Mashhad — Missile Warehouse',body:'<b>Missile warehouse in Mashhad destroyed</b> (Iran\'s second city). IRGC missile storage facility reported destroyed — Kian Melli.',date:'01 Mar'},
   {lat:29.60,lng:52.53,type:'us',day:1,name:'Shiraz — Military Targets',body:'Aerial strikes confirmed in Shiraz. Part of the IDF wave targeting ballistic missile array and air-defence systems across southern Iran.',date:'28 Feb + 01 Mar'},
-  {lat:30.28,lng:57.08,type:'us',day:1,name:'Kerman — Army Aviation Base',body:'<b>Kerman Army Aviation (Havanirouz) base struck</b> at ~06:50 local time. Citizen footage confirmed aftermath.',date:'01 Mar'},
+  {lat:30.28,lng:57.08,type:'us',day:2,name:'Kerman — Army Aviation Base',body:'<b>Kerman Army Aviation (Havanirouz) base struck</b> at ~06:50 local time. Citizen footage confirmed aftermath.',date:'01 Mar'},
   {lat:35.32,lng:46.99,type:'us',day:1,name:'Sanandaj / Kurdistan',body:'<b>Multiple waves of strikes</b> on Sanandaj (Kurdistan capital). Qalian military barracks struck. At least 2 civilians killed. Heavy explosions over multiple hours.',date:'28 Feb + 01 Mar'},
   {lat:28.97,lng:50.84,type:'us',day:1,name:'Bushehr — Naval Air Base',body:'6th Tactical Fighter Base at Bushehr struck. Naval base targeted. <b>No confirmed direct reactor hit</b> (IAEA Day 3), though port of Bushehr hit. Rosatom evacuated ~100 Russian staff.',date:'28 Feb + 01 Mar'},
   {lat:27.20,lng:56.27,type:'us',day:1,name:'Bandar Abbas — Iranian Navy',body:'Drone carrier <b>IRIS Shahid Bagheri (C110-4)</b> struck at pier. IRIS Makran (441) struck. Multiple frigates (Bayandor, Alvand, Jamaran class) sunk. <b>11 warships total destroyed in 48hrs</b> (CENTCOM). All 11 Gulf of Oman warships eliminated.',date:'28 Feb + 01 Mar'},
-  {lat:30.36,lng:48.29,type:'us',day:1,name:'Abadan — Oil Refinery',body:'<b>Abadan hit by heavy missile strikes</b> — one of Iran\'s largest oil refineries. Major oil infrastructure targeted in Khuzestan province.',date:'01 Mar'},
-  {lat:32.31,lng:48.69,type:'us',day:1,name:'Dezful / Andimeshk — Military Base',body:'Andimeshk military base struck, <b>city power cut</b>. Dezful area also struck. Ammunition depot in Izeh (Qala Tel) destroyed.',date:'01 Mar'},
-  {lat:26.56,lng:54.01,type:'us',day:1,name:'Kish Island — Explosion',body:'<b>Powerful explosion on Kish Island</b> (free-trade zone, south Iran). No detail on specific target. Reported Mizan news channel.',date:'01 Mar'},
-  {lat:32.01,lng:48.70,type:'us',day:1,name:'Ahvaz — IRGC Headquarters',body:'Missiles struck <b>IRGC HQ in Chaharsher district</b> and NAJA (Law Enforcement) hotel. Khuzestan provincial capital. Residents filmed weeping in streets.',date:'01 Mar'},
-  {lat:32.00,lng:54.36,type:'us',day:1,name:'Yazd — Military Garrisons',body:'Explosions near <b>Yazd airport, Vali-Asr garrison, and Al-Ghadir garrison</b>. Multiple citizen reports on social media.',date:'01 Mar'},
+  {lat:30.36,lng:48.29,type:'us',day:2,name:'Abadan — Oil Refinery',body:'<b>Abadan hit by heavy missile strikes</b> — one of Iran\'s largest oil refineries. Major oil infrastructure targeted in Khuzestan province.',date:'01 Mar'},
+  {lat:32.31,lng:48.69,type:'us',day:2,name:'Dezful / Andimeshk — Military Base',body:'Andimeshk military base struck, <b>city power cut</b>. Dezful area also struck. Ammunition depot in Izeh (Qala Tel) destroyed.',date:'01 Mar'},
+  {lat:26.56,lng:54.01,type:'us',day:2,name:'Kish Island — Explosion',body:'<b>Powerful explosion on Kish Island</b> (free-trade zone, south Iran). No detail on specific target. Reported Mizan news channel.',date:'01 Mar'},
+  {lat:32.01,lng:48.70,type:'us',day:2,name:'Ahvaz — IRGC Headquarters',body:'Missiles struck <b>IRGC HQ in Chaharsher district</b> and NAJA (Law Enforcement) hotel. Khuzestan provincial capital. Residents filmed weeping in streets.',date:'01 Mar'},
+  {lat:32.00,lng:54.36,type:'us',day:2,name:'Yazd — Military Garrisons',body:'Explosions near <b>Yazd airport, Vali-Asr garrison, and Al-Ghadir garrison</b>. Multiple citizen reports on social media.',date:'01 Mar'},
   {lat:27.15,lng:57.08,type:'us',day:1,name:'Minab — Girls\' Elementary School',body:'<b>Girls\' school struck</b>. Iranian sources: 148 students killed, 95 wounded. NYT/Washington Post verified footage. Iranian FM shared aerial photo of rows of graves. Most controversial civilian incident.',date:'28 Feb'},
   {lat:27.18,lng:56.26,type:'us',day:1,name:'Chah Bahar — Jamaran Corvette',body:'Iranian Jamaran-class corvette <b>sunk at Chah Bahar pier</b> — CENTCOM confirmed. Part of wider naval annihilation campaign.',date:'28 Feb'},
 
@@ -398,15 +295,15 @@ function renderBaseline(){
   // ════════════════════════════════════════════════
   {lat:32.09,lng:34.88,type:'iran',day:1,name:'Tel Aviv, Israel',body:'HaKirya military HQ, Tel Nof AB, defence industrial complex. <b>1 woman killed</b>, 22+ injured in direct hit. Iron Dome strained — some missiles breached. 162 missiles total at Israel.',date:'28 Feb + 01 Mar'},
   {lat:31.77,lng:35.21,type:'iran',day:1,name:'West Jerusalem — Residential Street',body:'<b>Ballistic missile hit residential street</b> in West Jerusalem. 6 wounded, civilian vehicle destroyed, surrounding road damaged. Unprecedented direct hit in the capital.',date:'28 Feb'},
-  {lat:26.22,lng:50.59,type:'iran',day:1,name:'Manama, Bahrain — US 5th Fleet',body:'US Naval Support Activity Bahrain (5th Fleet HQ) struck by missile. NASA FIRMS detected <b>large fire at NSA Bahrain</b> (satellite). Crowne Plaza hotel drone fire. <b>45 missiles + 9 drones</b> total vs. Bahrain. 3 wounded.',date:'28 Feb + 01 Mar'},
-  {lat:25.08,lng:55.14,type:'iran',day:1,name:'Dubai, UAE',body:'Fairmont The Palm drone strike. Burj Al Arab debris fire. Dubai Parks closed. <b>167 missiles targeted UAE + 209 drones total</b>. UAE intercepted 169/182 missiles. <b>3 killed, 58+ wounded</b>. Explosions heard day 3 also.',date:'28 Feb + 01-03 Mar'},
+  {lat:26.22,lng:50.59,type:'iran',day:1,name:'Manama, Bahrain — US 5th Fleet',body:'US Naval Support Activity Bahrain (5th Fleet HQ) struck. NASA FIRMS detected <b>large fire at NSA Bahrain</b> via satellite. Radar dome filmed being directly hit. Crowne Plaza hotel also struck by drone — fire. Air raid sirens across Manama. 3 wounded.',date:'28 Feb'},
+  {lat:25.08,lng:55.14,type:'iran',day:1,name:'Dubai, UAE',body:'Fairmont The Palm drone strike. Burj Al Arab debris fire. Dubai Parks closed. <b>First wave: 137 missiles + 209 drones</b> targeted UAE on Day 1. UAE intercepted most; fire at Palm Jumeirah confirmed.',date:'28 Feb'},
   {lat:24.45,lng:54.38,type:'iran',day:1,name:'Abu Dhabi — Al Dhafra AB',body:'Al Dhafra Air Base targeted. Etihad Towers area — debris damage. <b>1 killed, 7 injured</b>. AWS cloud region UAE (ME-CENTRAL-1) suffered power outages + connectivity disruptions.',date:'28 Feb + 01 Mar'},
-  {lat:25.29,lng:51.53,type:'iran',day:1,name:'Doha, Qatar — Al Udeid AB',body:'<b>Al Udeid AB</b> (CENTCOM HQ — largest US base in region) struck. <b>44 missiles + 8 drones vs Qatar</b>. Qatar AF shot down 2 Iranian Sukhoi Su-24 bombers. RAF Typhoon (UK) downed 1 Iranian drone. Qatar LNG facilities struck Day 3.',date:'28 Feb + 01-02 Mar'},
-  {lat:29.38,lng:47.98,type:'iran',day:1,name:'Kuwait — Ali Al Salem AB',body:'Ali Al Salem AB struck. Kuwait intercepted <b>178 ballistic missiles + 384 drones</b> total (state media). US Embassy Kuwait struck Day 3 (smoke seen rising). <b>1 civilian killed, 32 wounded</b> in Iranian strikes on Kuwait.',date:'28 Feb + 01-02 Mar'},
+  {lat:25.29,lng:51.53,type:'iran',day:1,name:'Doha, Qatar — Al Udeid AB',body:'<b>Al Udeid AB</b> (CENTCOM HQ — largest US base in region) struck. Two ballistic missiles hit Al Udeid; drone targeted early warning radar. <b>Loud blasts at 1:40 AM local</b>, sirens across Doha. Qatar intercepted most incoming. 16 injured from falling shrapnel.',date:'28 Feb'},
+  {lat:29.38,lng:47.98,type:'iran',day:1,name:'Kuwait — Ali Al Salem AB',body:'Ali Al Salem AB struck by Iranian ballistic missiles. Kuwait intercepted all on Day 1. <b>1 civilian killed, 32 wounded</b> across all Kuwait strikes. Kuwait Int Airport also targeted — minor injuries to staff, passenger building damaged.',date:'28 Feb'},
   {lat:31.95,lng:35.93,type:'iran',day:1,name:'Amman, Jordan — Muwaffaq Salti AB',body:'Muwaffaq Salti AB targeted. <b>Bundeswehr (German) field camp struck — 1 injured.</b> Jordan intercepted 49+ drones + ballistic missiles. Jordan closed airspace nightly. Dense smoke + unconfirmed US F-15 crash reports.',date:'28 Feb + 01 Mar'},
   {lat:24.69,lng:46.72,type:'iran',day:1,name:'Riyadh, Saudi Arabia — Prince Sultan AB',body:'Prince Sultan AB (US troops) targeted — all intercepted. King Khalid International Airport targeted — intercepted. Saudi Arabia announced it intercepted all Iranian missiles. Statement condemned attacks as "cowardly".',date:'28 Feb + 01 Mar'},
   {lat:36.19,lng:44.01,type:'iran',day:1,name:'Erbil, Iraq — US Bases',body:'Erbil Int\'l Airport targeted twice. Al-Harir base (US military hub in Erbil) struck by drone. US Consulate struck. <b>Pro-Iran "Guardians of the Blood Brigade"</b> claimed responsibility separately.',date:'28 Feb + 01 Mar'},
-  {lat:33.34,lng:44.36,type:'iran',day:1,name:'Baghdad — Victory Base / US Embassy Area',body:'2 drones targeted US <b>Victory Base near Baghdad Airport</b> — one struck the base. <b>US Embassy area**: smoke seen rising (Day 3). Iraqi security forces tear-gassed pro-Iran protesters outside Green Zone.',date:'28 Feb + 01-02 Mar'},
+  {lat:33.34,lng:44.36,type:'iran',day:1,name:'Baghdad — Victory Base / US Embassy Area',body:'2 drones targeted US <b>Victory Base near Baghdad Airport</b> — one struck the base. Pro-Iran protesters outside Green Zone. Kataib Hezbollah HQ also struck (2 killed).',date:'28 Feb'},
   {lat:32.55,lng:44.35,type:'iran',day:1,name:'Jurf al-Nasr / Jurf al-Sakhar, Iraq',body:'Israeli strikes on <b>Kataib Hezbollah HQ</b> (PMF) SW of Baghdad — <b>2 killed, 3-5 wounded</b>. Second strike at Jurf al-Nasr area. Kataib Hezbollah vowed to "begin attacking American bases".',date:'28 Feb + 01 Mar'},
   {lat:33.55,lng:36.32,type:'iran',day:1,name:'Ain Tarma, Syria (near Damascus)',body:'Iranian missile debris fell on Ain Tarma — <b>man and his 3 daughters injured</b> (SANA). Suwayda industrial area: missile explosion <b>killed 4 people</b>.',date:'28 Feb'},
 
@@ -419,10 +316,10 @@ function renderBaseline(){
   {lat:33.89,lng:35.51,type:'hzb',day:2,name:'Beirut — IDF Strikes Dahiyeh',body:'IDF strikes on Dahiyeh (southern Beirut Hezbollah stronghold), Beqaa Valley. <b>52 people killed, 154 wounded</b> (Lebanon Health Ministry Day 2-3). PIJ commander <b>Adham al-Othman killed</b>. Hezbollah MP <b>Mohammad Raad killed</b> (Al Hadath). Al-Manar TV studios struck after evacuation warning.',date:'01-02 Mar'},
   {lat:33.27,lng:35.20,type:'hzb',day:2,name:'Southern Lebanon — IDF Ground Prep',body:'IDF evacuated <b>52 then 53+ villages</b> in south Lebanon. Strikes on Haris, Nabatieh al-Fawqa, Mayfadoun. Tyre (Sour): <b>high-rise building collapsed</b> (CNN geolocated footage, Day 3). IDF: "all options on the table" for ground offensive.',date:'01-03 Mar'},
   {lat:32.82,lng:35.00,type:'hzb',day:2,name:'Haifa / Upper Galilee — Hezbollah Rockets',body:'Hezbollah <b>fired rockets at Haifa</b> and IDF base in Upper Galilee — first attack since Nov 2024 ceasefire. IDF declared it "an official declaration of war by Hezbollah." No damage reported from first salvo. Subsequent waves followed.',date:'01-02 Mar'},
-  {lat:26.71,lng:50.04,type:'oil',day:2,name:'Aramco Ras Tanura Refinery, Saudi Arabia',body:'<b>Saudi Aramco Ras Tanura refinery closed</b> after being hit — contained fire. Saudi officials: caused by debris from intercepted Iranian drone. Analysts called it "significant escalation." Saudi Arabia\'s largest oil export terminal.',date:'01 Mar'},
+  {lat:26.71,lng:50.04,type:'oil',day:3,name:'Aramco Ras Tanura — First Strike (Day 3)',body:'<b>Saudi Aramco Ras Tanura refinery shut down</b> after drone strike caused fire. Saudi MoD: two drones intercepted, shrapnel caused "limited fire," no civilian casualties. Refinery halted operations as precaution. <b>550,000 bpd capacity offline.</b> Bloomberg/Reuters confirmed. Brent crude surged ~10%. First confirmed attack on Gulf energy infrastructure. (Bloomberg / Jerusalem Post / The National, 02 Mar)',date:'02 Mar'},
   {lat:26.19,lng:50.61,type:'port',day:2,name:'Mina Salman Port, Bahrain',body:'Iranian strike on Mina Salman port — fire. Falling debris from intercepted missile struck foreign ship: <b>1 Asian worker killed, 2 seriously injured.</b>',date:'01-02 Mar'},
   {lat:25.01,lng:55.08,type:'port',day:2,name:'Jebel Ali Port, Dubai',body:'Fire at Jebel Ali from Iranian strike debris. <b>World\'s busiest container port</b> — operations severely disrupted.',date:'01 Mar'},
-  {lat:22.65,lng:59.51,type:'port',day:2,name:'Port of Duqm, Oman',body:'<b>Struck by 2 Iranian drones</b> — 1 expatriate injured. Oman condemned the attack despite being sole GCC member not struck on Day 1.',date:'01 Mar'},
+  {lat:19.67,lng:57.70,type:'port',day:2,name:'Port of Duqm, Oman',body:'<b>Two Iranian drones struck Port of Duqm</b> — 1 foreign worker injured (Oman News Agency). Oman condemned the attack despite being sole GCC member not targeted on Day 1. Separately: Palau-flagged oil tanker attacked <b>5 nautical miles off Musandam governorate</b> — 4 crew injured (Oman Maritime Security Centre).',date:'01 Mar'},
   {lat:26.20,lng:56.38,type:'port',day:2,name:'Mina Saqr — Vessel Strike',body:'Vessel struck NW of Mina Saqr, UAE. Fire aboard confirmed (UKMTO). Part of IRGC maritime targeting campaign.',date:'01 Mar'},
   {lat:26.70,lng:56.05,type:'oil',day:2,name:'Strait of Hormuz — Multiple Tanker Strikes',body:'IRGC struck multiple oil tankers. <i>Skylight</i> tanker (Palau-flagged) hit near Oman — <b>4 crew injured</b>, 20-person crew evacuated. IRGC <b>formally declared Strait closed to shipping.</b> Maersk, MSC, Hapag-Lloyd suspended all transits. 3 x US/UK oil tankers hit (Day 3 — OPB).',date:'01-02 Mar'},
   {lat:23.60,lng:58.60,type:'oil',day:2,name:'Masandam, Oman — Tanker Attack',body:'Oil tanker attacked <b>5 nautical miles off Masandam coast</b> (Oman). Part of IRGC maritime interdiction campaign in Gulf of Oman.',date:'01-02 Mar'},
@@ -443,6 +340,11 @@ function renderBaseline(){
   {lat:29.38,lng:47.98,type:'iran',day:3,name:'Kuwait — Friendly Fire Incident (F-15E)',body:'Kuwait air defenses <b>mistakenly shot down 3 US F-15E Strike Eagles</b> during Iranian attack involving aircraft, ballistic missiles and drones. All 6 pilots ejected safely. CENTCOM confirmed "apparent friendly fire incident."',date:'02 Mar'},
   {lat:35.69,lng:51.39,type:'us',day:3,name:'Tehran — Continuing Strikes Day 3',body:'Continued waves of strikes on Tehran overnight. <b>20+ civilians killed at Niloofar Square</b> (second strike). Late on 2 March: <b>1,300 Iranian military killed</b> in total (Hengaw estimate). Total Iranian Red Crescent civilian toll: <b>555 killed in 131 cities</b>.',date:'02 Mar'},
   {lat:29.60,lng:52.53,type:'us',day:3,name:'Shiraz + Kerman — Day 3 Strikes',body:'Aerial strikes on Shiraz and Kerman confirmed (AloNews). Part of ongoing systematic degradation campaign across all Iranian provinces.',date:'01-02 Mar'},
+  {lat:26.22,lng:50.60,type:'iran',day:3,name:'Bahrain — Day 3 Iranian Missile Wave',body:'Fresh Iranian missile and drone barrage on Day 3. <b>Residential tower in Manama neighbourhood struck</b> — civil defence deployed. Total Bahrain: <b>73 missiles + 91 drones</b> launched by Iran since conflict began (Bahrain MoD). One Asian worker killed when missile debris struck vessel in Salman Industrial City.',date:'02 Mar'},
+  {lat:25.08,lng:55.16,type:'iran',day:3,name:'Dubai — Day 3 Iranian Strikes',body:'Continued Iranian strikes on Dubai on Day 3. Burj Al Arab area — explosions heard. UAE Day 3 running total: <b>165 ballistic missiles + 2 cruise missiles + 541 drones</b>. 21 drones hit civilian targets across UAE. <b>3 killed</b> (Pakistani, Nepali, Bangladeshi workers), 68 injured total.',date:'02 Mar'},
+  {lat:25.30,lng:51.55,type:'iran',day:3,name:'Qatar — Day 3 Continued Attacks',body:'Iran continued targeting Qatar on Day 3. FM al-Ansari: "All red lines have been crossed — from north to south." Qatar AF downed <b>2 Iranian Su-24 Fencer bombers</b> — confirmed kill (Qatar MoD). Qatar totals: <b>98 of 101 ballistic missiles intercepted</b>; 24 of 39 drones downed; 16 injured.',date:'02 Mar'},
+  {lat:29.40,lng:48.00,type:'iran',day:3,name:'Kuwait — Day 3 Continued Attacks',body:'Iran continued missile and drone attacks on Kuwait on Day 3. US Embassy Kuwait struck — smoke seen rising. Kuwait total: <b>178 ballistic missiles + 384 drones</b> intercepted. 1 civilian killed, 32 wounded. Kuwait FM summoned Iranian ambassador.',date:'02 Mar'},
+  {lat:33.89,lng:36.50,type:'iran',day:3,name:'Baghdad / Iraq — Day 3 Strikes on US Bases',body:'Iran-backed groups continued targeting US forces. <b>US Embassy area in Baghdad</b> — smoke seen rising from strike. Iraqi security forces tear-gassed pro-Iran protesters outside Green Zone. Kataib Hezbollah warned: "we will begin attacking American bases." Erbil targeted again.',date:'02 Mar'},
 
   // ════════════════════════════════════════════════
   // DAY 4 — 03 MARCH 2026
@@ -468,6 +370,14 @@ function renderBaseline(){
   // ════════════════════════════════════════════════
   // DAY 5 — 04 MARCH 2026
   // ════════════════════════════════════════════════
+  // ── STRIKES ON IRAN — DAY 5 ──
+  {lat:35.73,lng:51.41,type:'us',day:5,name:'Tehran — Basij HQ + Internal Security Command',body:'IDF confirmed strikes on <b>Basij headquarters</b> and Iran\'s <b>internal security command buildings</b> in Tehran — "10th wave of attacks against Iran" (Al Jazeera correspondent in Tehran). Also hit: missile launch pads, defence systems, and the supply/logistics directorate of IRGC ground forces. Fires and thick smoke visible across multiple city districts. Targets chosen to degrade the regime\'s capacity for internal repression. (IDF statement / Al Jazeera, 04 Mar)',date:'04 Mar'},
+  {lat:35.76,lng:51.43,type:'us',day:5,name:'Tehran — IRIB State Broadcaster HQ (Second Strike)',body:'<b>IRIB headquarters struck for second consecutive day.</b> Iran\'s state broadcaster switched to Telewebion IP internet streaming after transmitters destroyed. Iranian state TV went dark on-air; broadcasts relocated (Wikipedia timeline / Al Jazeera, 04 Mar). Communications across Tehran severely degraded — near-total internet blackout reported by Netblocks.',date:'04 Mar'},
+  {lat:35.69,lng:51.38,type:'us',day:5,name:'Tehran — Assembly of Experts Bombed Mid-Session',body:'<b>Israel bombed the Assembly of Experts</b> while members were in emergency session to elect a new Supreme Leader following Khamenei\'s death. The historic Mirdamad St. Senate building — current seat of the Assembly — struck directly. Session disrupted; no confirmed successor announced. Mojtaba Khamenei (Khamenei\'s son) survived a separate airstrike; reportedly being considered as successor by IRGC factions. (Wikipedia / Al Jazeera, 04 Mar)',date:'04 Mar'},
+  {lat:35.83,lng:51.00,type:'us',day:5,name:'Karaj — Continued Strikes Day 5',body:'<b>Major explosions reported across Karaj</b> — Al Jazeera\'s Tehran correspondent confirmed blasts in multiple districts. IRGC 10th Seyyed ol Shohada Division (based in Karaj, Alborz Province) targeted. Karaj also home to Shahid Karimi Drone Base and Bakhtaran underground missile storage. Satellite imagery from Day 3 already showed Choqa Balk-e drone base destroyed. (Al Jazeera / CTP-ISW, 04 Mar)',date:'04 Mar'},
+  {lat:32.65,lng:51.67,type:'us',day:5,name:'Isfahan — Day 5 Strikes',body:'<b>Explosions in Isfahan confirmed</b> by Al Jazeera\'s correspondent in Tehran on 04 Mar. Isfahan hosts major IRGC aerospace and missile facilities. Previous rounds targeted IRGC Aerospace Force drone and missile sites in province. Natanz (within Isfahan province) already confirmed damaged by IAEA on Day 4. (Al Jazeera, 04 Mar)',date:'04 Mar'},
+  {lat:35.70,lng:51.45,type:'us',day:5,name:'Tehran — IDF F-35I Shoots Down Iranian Yak-130 Jet',body:'<b>IDF F-35I "Adir" shot down a Russian-made Iranian Yak-130 fighter jet over Tehran</b> — first time in history a stealth fighter has destroyed a manned combat aircraft in air-to-air combat. Iranian aircraft had sortied during the 10th wave of strikes. IDF confirmed the kill. Secretary of State Rubio separately announced US-Israeli strikes will <b>increase in intensity.</b> (IDF / Wikipedia, 04 Mar)',date:'04 Mar'},
+
   {lat:33.89,lng:35.51,type:'hzb',day:5,name:'Beirut Dahiyeh — Day 5 Strikes',body:'IDF struck Dahiyeh again including area near <b>presidential palace</b> — first time strikes targeted this neighbourhood. AFP smoke footage confirmed (Dawn.com). Ashkelon: Iranian missile intercepted.',date:'04 Mar'},
   {lat:33.85,lng:35.56,type:'hzb',day:5,name:'Beirut Hazmieh — Comfort Hotel Strike',body:'Israeli airstrike hit <b>Comfort Hotel in Hazmieh</b> — eastern suburb of Beirut. First responders inspected damage (AFP/AFPTV footage verified). Hazmieh is a predominantly Christian neighbourhood near the Defence Ministry.',date:'04 Mar'},
   {lat:34.00,lng:36.22,type:'hzb',day:5,name:'Baalbek — Residential Building Strike',body:'Israeli airstrike hit <b>four-storey residential building in Baalbek</b> — several people killed. Rescue teams pulled families from rubble (Lebanon NNA/Haaretz). IDF ordered evacuation of 16 villages in southern Lebanon overnight.',date:'04 Mar'},
@@ -476,15 +386,45 @@ function renderBaseline(){
   {lat:31.89,lng:35.00,type:'iran',day:5,name:'Amman, Jordan — US Embassy Evacuated',body:'<b>US Embassy in Amman evacuated</b> "due to a threat" (State Dept security alert). Non-emergency personnel instructed to shelter-in-place. "The embassy has instructed all Mission personnel to shelter-in-place. We recommend all Americans do the same." State Dept facilitating charter flights from Jordan.',date:'04 Mar'},
 
   // ════════════════════════════════════════════════
-  // NAVAL / PERMANENT ASSETS (Day 0)
+  // DAY 5 — NEW VERIFIED INCIDENTS (04 MAR 2026)
   // ════════════════════════════════════════════════
+
+  // TURKEY — Iranian ballistic missile intercepted by NATO
+  {lat:36.56,lng:36.16,type:'iran',day:5,name:'Hatay, Turkey — NATO Intercepts Iranian Ballistic Missile',body:'<b>Turkey\'s first NATO article-5 adjacent incident.</b> An Iranian ballistic missile tracking through Iraqi and Syrian airspace toward Turkish territory was engaged and neutralised by <b>NATO air and missile defence systems in the Eastern Mediterranean</b>. Debris fell in Dörtyol district, Hatay Province — no casualties. Turkish Defence Ministry confirmed. Turkish FM Hakan Fidan called Iranian counterpart Araghchi to protest directly. Ankara warned: <b>"We reserve the right to respond to any hostile act."</b> First time Iran directly targeted NATO member territory. (Al-Monitor / Newsweek / Turkish MoD, 04 Mar)',date:'04 Mar'},
+
+  // IRIS DENA — sunk off Sri Lanka
+  {lat:6.03,lng:80.22,type:'navy',day:5,name:'IRIS Dena — Iranian Frigate Sunk off Sri Lanka',body:'Iranian Moudge-class frigate <b>IRIS Dena</b> sank ~40 nautical miles south of Galle, Sri Lanka after reported submarine strike. Crew of 180; distress call at ~06:00 local. Sri Lanka Navy and Air Force rescued <b>32 critically wounded sailors</b>; <b>101+ missing</b>, several bodies recovered. Ship was returning from 2026 International Fleet Review in Visakhapatnam, India. Cause unconfirmed — Sri Lankan officials said no other vessel or aircraft observed in area. US previously stated goal of sinking <b>"the entire Iranian navy"</b>. (France 24 / Reuters / Al Jazeera / Malay Mail, 04 Mar)',date:'04 Mar'},
+
+  // RAF F-35B — first combat kill over Jordan
+  {lat:31.50,lng:36.50,type:'iran',day:4,name:'Jordan Airspace — RAF F-35B First Combat Kill',body:'<b>RAF F-35B jets (No. 617 Sqn) operating from RAF Akrotiri</b> shot down multiple Iranian one-way attack drones over Jordanian airspace — <b>first time an RAF F-35 has destroyed a target on operations</b>. Supported by Typhoon fighters and a Voyager tanker. Separately: UK counter-drone team neutralised drones in Iraqi airspace; RAF Typhoon (joint UK-Qatar 12 Sqn) downed an Iranian drone headed for Qatar with air-to-air missile. UK MoD announcement 03 Mar. (MoD / The Aviationist / FlightGlobal / Aerotime, 03 Mar)',date:'03-04 Mar'},
+
+  // Al Minhad Air Base, UAE — struck
+  {lat:25.03,lng:55.36,type:'iran',day:2,name:'Al Minhad Air Base — UAE (ADF/NZDF)',body:'<b>Al Minhad Air Base struck by Iranian drones/missiles.</b> Home to <b>Camp Baird</b> — Australian Defence Force Headquarters Middle East (HQME) and New Zealand Defence Force Middle East contingent. UAE intercepted the majority; base sustained damage. Australia and New Zealand confirmed their personnel were safe. UAE total: <b>165 ballistic missiles + 2 cruise missiles + 541 drones</b> — 21 drones hit civilian targets (UAE MoD). (Wikipedia / 2026 Iran conflict)',date:'01-02 Mar'},
+
+  // Bahrain — residential tower hit by Shahed drone
+  {lat:26.23,lng:50.61,type:'iran',day:1,name:'Manama Residential Tower — Shahed Drone Strike',body:'Iranian <b>Shahed-136 kamikaze drone filmed smashing into a tower block</b> near US 5th Fleet HQ, setting building ablaze (Al Jazeera social media footage). Civil defence engaged in firefighting and rescue. <b>Several residential buildings hit</b> — Bahrain Interior Ministry. One Asian worker killed when intercepted missile debris struck a foreign vessel in Salman Industrial City. Total: <b>73 missiles + 91 drones</b> vs Bahrain (Bahrain MoD). (Al Jazeera, 28 Feb–01 Mar)',date:'28 Feb–01 Mar'},
+
+  // Qatar — radar targeted + naval intercept
+  {lat:25.72,lng:51.18,type:'iran',day:2,name:'Northern Qatar — Early Warning Radar Targeted',body:'Iranian missile targeted a <b>long-range early warning radar in northern Qatar</b> — no injuries (Al Jazeera sources). Qatar Emiri Navy contributed to air defence alongside air force: <b>LPD Al Fulk</b> (Aster-30 Block 1 / Kronos Power Shield) intercept confirmed. Qatar AF also downed <b>2 Iranian Su-24 bombers</b>. Qatar totals: <b>101 ballistic missiles, 3 cruise missiles, 39 drones</b> — 98 missiles intercepted; 16 injured. Qatar FM al-Ansari: "All red lines have been crossed — from north to south of Qatar." (Al Jazeera / Naval News / Qatar MoD, 02 Mar)',date:'01-02 Mar'},
+
+  // France Rafales — UAE air defence
+  {lat:24.15,lng:54.50,type:'iran',day:2,name:'Al Dhafra AB — French Rafales Defend UAE',body:'French <b>Rafale jets from Al Dhafra AB (EC 1/7 "Provence" squadron)</b> scrambled to defend UAE airspace against Iranian drones. French FM Barrot confirmed: <b>"French Rafales neutralised Iranian drones targeting the UAE."</b> France has hundreds of Navy, Air Force and Army personnel at Al Dhafra. France also announced additional Rafales being dispatched to the region. An Iranian drone struck Al Dhafra on 01 Mar. France + Germany + UK declared willingness to strike Iranian launch sites if attacks continued. (Al Jazeera / The Aviationist, 01-03 Mar)',date:'01-03 Mar'},
+
+  // Satellite damage analysis — US radar systems hit
+  {lat:26.24,lng:50.56,type:'iran',day:2,name:'Bahrain NSA — Radar Dome Hit (Satellite Confirmed)',body:'Analysis of Planet Labs satellite imagery found <b>damaged communications/radar structures at 7 of 11 US military bases struck by Iran</b> — indicating Iran systematically targeted US tracking and defence systems. At NSA Bahrain: Iranian drone filmed hitting radar dome directly on Day 1. Researcher + NYT analysis confirmed. CENTCOM: Iran launched <b>2,000+ drones and 500+ ballistic missiles total</b> as of 03 Mar (Adm. Brad Cooper). (NYT / Newsweek / CENTCOM, 03 Mar)',date:'28 Feb–03 Mar'},
+
+  {lat:26.04,lng:50.59,type:'iran',day:5,name:'Sheikh Isa Air Base, Bahrain — IRGC Large-Scale Attack',body:'IRGC announced <b>"large-scale drone and missile attack" on Sheikh Isa Air Base</b> at dawn — 20 drones + 3 missiles launched (IRGC via IRNA). Iran claimed to have destroyed the base\'s "main command headquarters." No casualties confirmed by Bahrain. Part of continuing Iranian campaign against US military infrastructure in Bahrain alongside NSA 5th Fleet. US State Dept ordered non-emergency personnel to leave Bahrain. (IRNA / Al Jazeera, 04 Mar)',date:'04 Mar'},
+
+  {lat:26.69,lng:50.18,type:'oil',day:5,name:'Ras Tanura — Second Projectile Strike (Day 5)',body:'<b>Second strike on Ras Tanura in 48 hours.</b> Projectile struck Saudi Aramco\'s Ras Tanura refinery — confirmed by two Reuters sources. Saudi MoD: "attempted attack" by drone, "initial evaluation shows no damage." Refinery operations remain shut from Day 3 strike. <b>WTI crude +2.3% on news.</b> Analysts: Iran systematically targeting Gulf energy infrastructure to maximise economic pressure. (Reuters / investingLive / BusinessToday, 04 Mar)',date:'04 Mar'},
+
+  {lat:36.08,lng:44.62,type:'iran',day:5,name:'Koya District, Iraqi Kurdistan — PDKI / Kurdish Opposition HQ',body:'Iranian Shahed suicide drones struck <b>Azadi (Freedom) Camp</b> of the Democratic Party of Iranian Kurdistan (PDKI) in Koya district, east of Erbil. Three drones targeted the facility; one hit near the camp\'s hospital — <b>1 wounded, significant structural damage</b> (AFP / local officials). Iran has targeted 4+ Kurdish opposition party HQs since Day 1: PAK, PDKI, Komala (Sulaymaniyah), PDKI Dikla (Erbil). Tehran classifies these groups as terrorist proxies of US/Israel. PDKI announced operations inside Iran in response. (AFP / Reuters / FDD Long War Journal, 04 Mar)',date:'04 Mar'},
+
+
   {lat:21.50,lng:63.00,type:'navy',day:0,name:'USS Abraham Lincoln (CVN-72)',body:'Arabian Sea. <b>CVW-9</b>: F-35C, F/A-18E/F, EA-18G Growlers. Tomahawk launches documented (USS Spruance + USS Thomas Hudner). Continuous strike sorties since conflict opened.',date:'Arabian Sea'},
   {lat:33.20,lng:33.80,type:'navy',day:0,name:'USS Gerald R. Ford (CVN-78)',body:'Eastern Mediterranean. <b>CVW-8</b> continuous strike sorties. 14 KC-46A tankers at Ben Gurion AB extending Iran strike range. CENTCOM: "largest regional concentration of US military firepower in a generation."',date:'Eastern Mediterranean'},
   {lat:37.00,lng:22.00,type:'navy',day:0,name:'French FS Charles de Gaulle (R91)',body:'French carrier strike group departed Baltic deployment — <b>redirected to Mediterranean</b> amid conflict. Mixed reports on whether it entered active combat zone.',date:'Mediterranean'},
 
  ],labels:[
-  {lat:26.52,lng:56.1,  text:'⚠ Strait of Hormuz — IRGC DECLARED CLOSED TO SHIPPING',anchor:[145,8]},
-  {lat:14.50,lng:43.00, text:'⚠ Red Sea — Houthis Monitoring · Cape of Good Hope Rerouting Active',anchor:[148,8]},
   {lat:27.50,lng:51.50, text:'Persian Gulf',anchor:[34,6]},
   {lat:20.00,lng:60.00, text:'Arabian Sea',anchor:[34,6]},
   {lat:38.00,lng:33.00, text:'Eastern Mediterranean',anchor:[55,6]},
@@ -494,14 +434,11 @@ function renderBaseline(){
   renderMarkers(data,null);
   lastMarkerKeys=new Set();
   (data.markers||[]).forEach(function(m){lastMarkerKeys.add(m.lat+'_'+m.lng+'_'+m.name);});
-  document.getElementById('last-updated').textContent='Comprehensive baseline — 28 Feb to 04 Mar · Awaiting live feed…';
-  document.getElementById('upd-status').textContent='Baseline: '+(data.markers||[]).length+' incidents loaded · Fetching live updates…';
+  document.getElementById('last-updated').textContent='28 Feb – 04 Mar 2026 · '+(data.markers||[]).length+' incidents';
 }
 
 // BOOT
 renderBaseline();
-document.getElementById('upd-btn').disabled=false;
-setTimeout(fetchLatestIntel,1800);
 </script>
 </body>
 </html>
