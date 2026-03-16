@@ -139,6 +139,21 @@
   .df-sep{width:1px;height:16px;background:var(--df-sep-col);margin:0 2px;flex-shrink:0;}
   .df-count{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:var(--df-count-col);margin-left:auto;flex-shrink:0;}
 
+  /* TYPE FILTER BAR */
+  .type-filter-bar{flex-shrink:0;background:var(--dfbar-bg);border-top:1px solid var(--border);padding:4px 20px;display:flex;align-items:center;gap:5px;z-index:997;flex-wrap:wrap;}
+  .tf-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:1px;border:1px solid var(--df-btn-border);background:transparent;color:var(--df-btn-col);cursor:pointer;transition:all 0.15s;flex-shrink:0;display:flex;align-items:center;gap:5px;}
+  .tf-btn:hover{border-color:var(--df-btn-hover-border);color:var(--df-btn-hover-col);}
+  .tf-btn.active{border-color:currentColor;}
+  .tf-btn[data-type="all"].active{background:var(--df-btn-all-active-bg);border-color:var(--df-btn-all-active-border);color:var(--white);}
+  .tf-btn[data-type="us"].active{background:rgba(192,39,26,0.18);border-color:var(--icon-us-b);color:var(--icon-us-c);}
+  .tf-btn[data-type="iran"].active{background:rgba(196,123,16,0.18);border-color:var(--icon-iran-b);color:var(--icon-iran-c);}
+  .tf-btn[data-type="hzb"].active{background:rgba(123,63,160,0.18);border-color:var(--icon-hzb-b);color:var(--icon-hzb-c);}
+  .tf-btn[data-type="apt"].active{background:rgba(204,68,204,0.18);border-color:var(--icon-apt-b);color:var(--icon-apt-c);}
+  .tf-btn[data-type="oil"].active{background:rgba(212,160,23,0.18);border-color:var(--icon-oil-b);color:var(--icon-oil-c);}
+  .tf-btn[data-type="port"].active{background:rgba(14,138,122,0.18);border-color:var(--icon-port-b);color:var(--icon-port-c);}
+  .tf-btn[data-type="navy"].active{background:rgba(29,92,158,0.18);border-color:var(--icon-navy-b);color:var(--icon-navy-c);}
+  .tf-swatch{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
   /* THEME TOGGLE */
   .theme-toggle{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:1px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;flex-shrink:0;margin-left:10px;}
   .theme-toggle:hover{border-color:var(--ake-red);color:var(--ake-red-lt);}
@@ -167,10 +182,6 @@
   .day-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:var(--day-badge-bg);border:1px solid var(--day-badge-border);color:var(--day-badge-col);padding:1px 5px;border-radius:1px;margin-left:5px;vertical-align:middle;}
   .new-badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:var(--ake-red);color:white;padding:1px 5px;border-radius:1px;margin-left:5px;vertical-align:middle;}
 
-  /* FOOTER */
-  .footer{flex-shrink:0;background:var(--ake-navy);border-top:1px solid var(--border);padding:4px 20px;display:flex;justify-content:space-between;align-items:center;z-index:1000;}
-  .footer-src{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--footer-src-col);}
-  .footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--footer-brand-col);}
 
   /* LEAFLET */
   .leaflet-control-zoom,.leaflet-control-attribution{display:none!important;}
@@ -232,9 +243,18 @@
     </div>
   </div>
 
-  <div class="footer">
-    <div class="footer-src">Sources: AKE · Anthropic Claude (live web search) · CENTCOM · Reuters · AP · Wikipedia · USNI · Al Jazeera · NBC · CNN · TOI · JINSA · CSIS</div>
-    <div class="footer-brand">AKE International · Geopolitical Risk · Live</div>
+  <div class="type-filter-bar" id="type-filter-bar">
+    <span class="df-label">Filter by Type</span>
+    <button class="tf-btn active" data-type="all" onclick="setTypeFilter('all',this)">All Types</button>
+    <div class="df-sep"></div>
+    <button class="tf-btn" data-type="us" onclick="setTypeFilter('us',this)"><span class="tf-swatch" style="background:var(--icon-us-c);"></span>US / Israel</button>
+    <button class="tf-btn" data-type="iran" onclick="setTypeFilter('iran',this)"><span class="tf-swatch" style="background:var(--icon-iran-c);"></span>Iran Retaliation</button>
+    <button class="tf-btn" data-type="hzb" onclick="setTypeFilter('hzb',this)"><span class="tf-swatch" style="background:var(--icon-hzb-c);border-radius:2px;"></span>Hezbollah / Lebanon</button>
+    <div class="df-sep"></div>
+    <button class="tf-btn" data-type="apt" onclick="setTypeFilter('apt',this)"><span class="tf-swatch" style="background:var(--icon-apt-c);clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%);border-radius:0;"></span>Airports</button>
+    <button class="tf-btn" data-type="oil" onclick="setTypeFilter('oil',this)"><span class="tf-swatch" style="background:var(--icon-oil-c);border-radius:1px;transform:rotate(30deg);"></span>Oil / Energy</button>
+    <button class="tf-btn" data-type="port" onclick="setTypeFilter('port',this)"><span class="tf-swatch" style="background:var(--icon-port-c);border-radius:1px;clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);"></span>Maritime</button>
+    <button class="tf-btn" data-type="navy" onclick="setTypeFilter('navy',this)"><span class="tf-swatch" style="background:var(--icon-navy-c);transform:rotate(45deg);border-radius:2px;"></span>Navy Assets</button>
   </div>
 </div>
 
@@ -242,6 +262,7 @@
 // setDayFilter must be global so the inline onclick on All Days button can reach it
 // It references activeDay and currentMapData which are also global
 var activeDay = 'all';
+var activeType = 'all';
 var currentMapData = null;
 var lastMarkerKeys = null;
 var applyFilter = null; // set inside window.onload once map is ready
@@ -249,6 +270,13 @@ var applyFilter = null; // set inside window.onload once map is ready
 function setDayFilter(day, btn){
   activeDay = (day === 'all') ? 'all' : parseInt(day);
   document.querySelectorAll('.df-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  if(applyFilter && currentMapData) applyFilter(currentMapData);
+}
+
+function setTypeFilter(type, btn){
+  activeType = type;
+  document.querySelectorAll('.tf-btn').forEach(function(b){ b.classList.remove('active'); });
   if(btn) btn.classList.add('active');
   if(applyFilter && currentMapData) applyFilter(currentMapData);
 }
@@ -368,7 +396,12 @@ function rebuildDayButtons(markers){
 
 function applyFilter_inner(data){
   var all=data.markers||[];
-  var shown=activeDay==='all'?all:all.filter(function(m){var d=m.day||(dateToDay(m.date)); return d===0||d===activeDay;});
+  var shown=all.filter(function(m){
+    var d=m.day||(dateToDay(m.date));
+    var dayOk = activeDay==='all' || d===0 || d===activeDay;
+    var typeOk = activeType==='all' || m.type===activeType;
+    return dayOk && typeOk;
+  });
   markerLayer.clearLayers();
   labelLayer.clearLayers();
   shown.forEach(function(m){
@@ -526,7 +559,7 @@ function renderBaseline(){
   {lat:25.01,lng:55.08,type:'iran',day:4,name:'Dubai — US Consulate Hit + UAE Totals',body:'Drone struck <b>parking lot of US Consulate Dubai</b> — fire, no injuries (Rubio confirmed). UAE Day 4 totals: <b>186 ballistic missiles launched, 172 destroyed; 812 drones, 755 intercepted</b>. 3 dead (Pakistani, Nepali, Bangladeshi nationalities), 68 injured. Two AWS data centres in UAE directly struck, one in Bahrain affected — causing <b>AWS cloud outages in Middle East region</b> (S3, EC2, DynamoDB).',date:'03 Mar'},
   {lat:25.13,lng:56.34,type:'oil',day:4,name:'Fujairah Oil Zone, UAE + UKMTO Incident',body:'Fire in <b>Fujairah oil industry zone</b> from drone debris (Fujairah media office/Reuters). UKMTO: vessel struck <b>7 nautical miles east of Fujairah</b> — unknown projectile, steel plating damage, all crew safe.',date:'03 Mar'},
   {lat:23.60,lng:59.38,type:'oil',day:4,name:'Gulf of Oman — UKMTO Incident 137nm E of Muscat',body:'UKMTO reported vessel struck <b>137 nautical miles east of Muscat</b> — loud explosion in proximity, smoke seen. Vessel and crew reported safe.',date:'03 Mar'},
-  {lat:26.22,lng:50.59,type:'oil',day:3,name:'MT Stena Imperative — US-Flagged Tanker Struck at Khalifa Bin Salman Port, Bahrain; 02 March',body:'The <b>US-flagged products tanker Stena Imperative</b> was struck by two projectiles while moored at Khalifa Bin Salman Port in Bahrain at 02:57 GMT on 2 March. A fire broke out and was later extinguished; all crew evacuated safely. The vessel is part of the US Navy's Tanker Security Program. Windward analysis confirmed the ship had gone dark (AIS off) since 28 February. The attack coincided with IRGC formally declaring the Strait of Hormuz closed. (UKMTO / The War Zone / Windward / Wikipedia, 02 Mar)',date:'02 Mar'},
+  {lat:26.22,lng:50.59,type:'oil',day:3,name:'MT Stena Imperative — US-Flagged Tanker Struck at Khalifa Bin Salman Port, Bahrain; 02 March',body:'The <b>US-flagged products tanker Stena Imperative</b> was struck by two projectiles while moored at Khalifa Bin Salman Port in Bahrain at 02:57 GMT on 2 March. A fire broke out and was later extinguished; all crew evacuated safely. The vessel is part of the US Navy\'s Tanker Security Program. Windward analysis confirmed the ship had gone dark (AIS off) since 28 February. The attack coincided with IRGC formally declaring the Strait of Hormuz closed. (UKMTO / The War Zone / Windward / Wikipedia, 02 Mar)',date:'02 Mar'},
   {lat:32.09,lng:34.88,type:'iran',day:4,name:'Central Israel — Cluster Munition Strike',body:'Iran fired missiles at central Israel with alleged <b>cluster sub-munitions</b> (IDF war crime accusation). MDA: 5 injured including one woman in moderate condition. Red alerts in Tel Aviv area. Lebanon PM formally banned Hezbollah military activity.',date:'03 Mar'},
 
   // ════════════════════════════════════════════════
@@ -794,9 +827,9 @@ function renderBaseline(){
 
   {lat:36.34,lng:43.13,type:'us',day:10,name:'Mosul, Iraq — US-Israeli Airstrike Kills PMF Member; Mourners March in Baghdad',body:'A <b>US-Israeli airstrike in Mosul</b> on the evening of 08 March killed a member of Iraq\'s <b>Popular Mobilisation Forces (PMF)</b>, an alliance that includes powerful pro-Iran groups integrated into the Iraqi army. AFP footage on 09 March showed mourners marching with the casket in Baghdad. The strike represents a continued US targeting of PMF infrastructure in northern Iraq beyond the Kurdistan Region. (AFP / Dawn, 08–09 Mar)',date:'09 Mar'},
 
-  {lat:33.87,lng:35.50,type:'us',day:10,name:'Beirut — IDF Strikes Hezbollah Targets; 5 IRGC Commanders Killed in Hotel Strike',body:'The IDF carried out a <b>precise strike in Beirut</b> on 09 March targeting Hezbollah targets including in the southern suburbs. Separately, Times of Israel and IDF confirmed that <b>five senior IRGC Quds Force commanders were killed</b> in an Israeli Navy strike on a hotel room in Beirut overnight, including <b>Majid Hassini</b>, a senior moneyman in the Lebanon Corps responsible for transferring funds from Iran to proxy groups including Hezbollah and Hamas. The IDF said the commanders were "hiding in a civilian hotel" and were from the IRGC Quds Force Palestine and Lebanon Corps. IDF Chief of Staff Lt. Gen. Eyal Zamir stated: "There is no safe place for the arms of Iranian evil, anywhere in the Middle East." (IDF / Times of Israel / Khaleej Times, 09 Mar)',date:'09 Mar'},
+  {lat:33.87,lng:35.50,type:'hzb',day:10,name:'Beirut — IDF Strikes Hezbollah Targets; 5 IRGC Commanders Killed in Hotel Strike',body:'The IDF carried out a <b>precise strike in Beirut</b> on 09 March targeting Hezbollah targets including in the southern suburbs. Separately, Times of Israel and IDF confirmed that <b>five senior IRGC Quds Force commanders were killed</b> in an Israeli Navy strike on a hotel room in Beirut overnight, including <b>Majid Hassini</b>, a senior moneyman in the Lebanon Corps responsible for transferring funds from Iran to proxy groups including Hezbollah and Hamas. The IDF said the commanders were "hiding in a civilian hotel" and were from the IRGC Quds Force Palestine and Lebanon Corps. IDF Chief of Staff Lt. Gen. Eyal Zamir stated: "There is no safe place for the arms of Iranian evil, anywhere in the Middle East." (IDF / Times of Israel / Khaleej Times, 09 Mar)',date:'09 Mar'},
 
-  {lat:33.82,lng:35.90,type:'us',day:10,name:'Eastern Lebanon (Nabi Sheet/Beqaa) — IDF Helicopter Air Assault; Fierce Clashes, 3 Lebanese Army Soldiers Killed',body:'<b>Approximately 15 Israeli enemy helicopters infiltrated from the Syrian side of the border</b> into eastern Lebanon near <b>Nabi Sheet</b> in the Beqaa Valley, Hezbollah reported. Lebanon\'s state-run National News Agency said an Israeli commando unit "infiltrated under the cover of darkness" and fierce clashes broke out when they were spotted by resistance fighters and residents. Warplanes and helicopters carried out approximately <b>40 raids</b> after Israeli units were exposed. The deaths included <b>three Lebanese army soldiers and one member of the general security directorate</b>. Al Jazeera reported at least 41 killed in Israeli airstrikes on the Bekaa overall on 09 March. Hezbollah said its fighters then targeted the Israeli withdrawal zone with rocket fire. (Dawn / Al Jazeera / NNA Lebanon, 09 Mar)',date:'09 Mar'},
+  {lat:33.82,lng:35.90,type:'hzb',day:10,name:'Eastern Lebanon (Nabi Sheet/Beqaa) — IDF Helicopter Air Assault; Fierce Clashes, 3 Lebanese Army Soldiers Killed',body:'<b>Approximately 15 Israeli enemy helicopters infiltrated from the Syrian side of the border</b> into eastern Lebanon near <b>Nabi Sheet</b> in the Beqaa Valley, Hezbollah reported. Lebanon\'s state-run National News Agency said an Israeli commando unit "infiltrated under the cover of darkness" and fierce clashes broke out when they were spotted by resistance fighters and residents. Warplanes and helicopters carried out approximately <b>40 raids</b> after Israeli units were exposed. The deaths included <b>three Lebanese army soldiers and one member of the general security directorate</b>. Al Jazeera reported at least 41 killed in Israeli airstrikes on the Bekaa overall on 09 March. Hezbollah said its fighters then targeted the Israeli withdrawal zone with rocket fire. (Dawn / Al Jazeera / NNA Lebanon, 09 Mar)',date:'09 Mar'},
 
   {lat:36.19,lng:44.01,type:'iran',day:10,name:'Erbil, Iraq — Drones Shot Down Near Airport; Continued Militia Activity',body:'Drones were <b>shot down near Erbil International Airport</b> on 09 March, Al Jazeera reported. The incident follows a pattern of continued drone activity targeting the Kurdish capital and its airport, which houses US military and diplomatic infrastructure. Air defences intercepted the incoming drones. (Al Jazeera, 09 Mar)',date:'09 Mar'},
 
@@ -816,7 +849,7 @@ function renderBaseline(){
 
   {lat:27.18,lng:56.27,type:'us',day:10,name:'Bandar Abbas Naval Port — Iranian Warship IRINS Bandar Lengeh Destroyed',body:'The Iranian navy ship <b>IRINS Bandar Lengeh was destroyed in the port of Bandar Abbas</b> on 09 March, according to Alma Research\'s end-of-day report. This was the latest in a sustained campaign against Iran\'s naval capabilities at its main southern port. Earlier in the war (1–4 March), US-Israeli strikes had already sunk or damaged more than 20 Iranian vessels including IRIS Sahand, IRIS Sabalan, IRIS Zagros, and the helicopter carrier Shahid Bagheri. CENTCOM previously stated Iran had zero ships left in the Gulf of Oman. The continued targeting of Bandar Abbas is aimed at eliminating Iran\'s ability to threaten the Strait of Hormuz and attack Gulf shipping. (Alma Research / CENTCOM / The War Zone, 09 Mar)',date:'09 Mar'},
 
-  {lat:33.83,lng:35.49,type:'us',day:10,name:'Ghobeiry, Beirut — IDF Strike on Hezbollah Southern Suburbs; Al Jazeera Verifies Footage',body:'Israel attacked the <b>Ghobeiry municipality in Beirut\'s southern suburbs</b> on 09 March (Monday). Al Jazeera verified footage showing the moment the strike hit, with a loud explosion audible on camera and thick clouds of smoke rising afterwards. The strike was part of a broader IDF campaign targeting Hezbollah strongholds in Dahiyeh / Beirut\'s southern suburbs that had been ongoing since 02 March. Ghobeiry is a core Hezbollah area and the IDF described targets there as Hezbollah command infrastructure. Earlier in the day, the IDF also struck targets including the IRGC Quds Force operations in Beirut. (Al Jazeera / IDF / AFP, 09 Mar)',date:'09 Mar'},
+  {lat:33.83,lng:35.49,type:'hzb',day:10,name:'Ghobeiry, Beirut — IDF Strike on Hezbollah Southern Suburbs; Al Jazeera Verifies Footage',body:'Israel attacked the <b>Ghobeiry municipality in Beirut\'s southern suburbs</b> on 09 March (Monday). Al Jazeera verified footage showing the moment the strike hit, with a loud explosion audible on camera and thick clouds of smoke rising afterwards. The strike was part of a broader IDF campaign targeting Hezbollah strongholds in Dahiyeh / Beirut\'s southern suburbs that had been ongoing since 02 March. Ghobeiry is a core Hezbollah area and the IDF described targets there as Hezbollah command infrastructure. Earlier in the day, the IDF also struck targets including the IRGC Quds Force operations in Beirut. (Al Jazeera / IDF / AFP, 09 Mar)',date:'09 Mar'},
 
   {lat:37.06,lng:37.38,type:'iran',day:10,name:'Turkey — NATO Air Defenses Shoot Down Iranian Ballistic Missile Entering Turkish Airspace',body:'<b>Turkey\'s Defense Ministry confirmed that NATO air defenses shot down an Iranian ballistic missile</b> as it entered Turkish airspace on 09 March. CNN\'s Day 10 summary confirmed this as one of the regional attacks. This was the second time an Iranian missile had strayed toward or entered Turkish territory during the conflict; the first was reportedly intercepted in northern Syria. Turkey had warned all parties to avoid steps endangering regional security and had deployed <b>6 F-16 aircraft and air defense systems in northern Cyprus</b> (Alma Research). Turkey also reiterated its warning to Iran after this incident. (CNN / Alma Research / Turkey MoD, 09 Mar)',date:'09 Mar'},
 
@@ -992,6 +1025,30 @@ function renderBaseline(){
 
   {lat:33.56,lng:35.37,type:'hzb',day:16,name:'Southern Lebanon — Israeli Strikes Kill 5 Including Child; Family Wiped Out in Qantara',body:'Israeli air raids and artillery fire struck multiple towns in southern Lebanon on 15 March. Lebanon\'s emergency services confirmed at least <b>five people killed — including a child</b> — and seven wounded in strikes on two towns. A <b>separate Israeli attack killed an entire family in Qantara</b>, including two children. Hezbollah reported it targeted Israeli soldiers near al-Khazan hill in Odaisseh and near Fatima Gate in Kfar Kila, and shelled an Israeli artillery position in Dishon. WHO confirmed 14 health workers were killed in southern Lebanon in the past 24 hours. Lebanon\'s total death toll rose to <b>826 killed since 2 March</b>, with 800,000+ displaced. (Al Jazeera / Lebanese Health Ministry / WHO, 15 Mar)',date:'15 Mar'},
 
+  {lat:34.80,lng:48.52,type:'us',day:16,name:'Hamadan, Iran — US-Israel Strikes on Air Base and Military Sites',body:'<b>Heavy explosions were reported in Hamadan</b> in western Iran on 15 March, explicitly named alongside Isfahan, Shiraz, Dezful and southern Tehran in the same wave of US-Israeli strikes. Hamadan Air Base (Shahid Nojeh) is one of Iran\'s most important air force installations, housing F-14 Tomcats and other strategic aircraft. The base had been targeted in earlier waves of the conflict. (Al Jazeera liveblog / Wikipedia timeline / AJ Day 16 summary, 15 Mar)',date:'15 Mar'},
+
+  {lat:32.06,lng:34.78,type:'iran',day:16,name:'Tel Aviv Streets — Iranian Cluster Missile; 3 Lightly Injured',body:'An <b>Iranian ballistic missile carrying cluster submunitions struck streets in the Tel Aviv area</b> on 15 March. CCTV footage released by Israeli police showed the moment of impact. <b>Three people sustained minor injuries</b>. The use of cluster munitions over populated urban areas drew renewed international condemnation. CNN reported the footage showed the projectile impacting in a central district. (Israeli police / CNN / Times of Israel, 15 Mar)',date:'15 Mar'},
+
+  {lat:33.85,lng:35.49,type:'hzb',day:16,name:'Haret Hreik, Beirut — IDF Destroys Hezbollah Radwan Force HQ',body:'The IDF struck and <b>destroyed the headquarters of Hezbollah\'s elite Radwan Force</b> in the Haret Hreik district of Beirut\'s southern suburbs on 15 March. The IDF said operatives at the site had been "advancing terror attacks against Israel and its citizens." In the al-Qatrani area of southern Lebanon, the IDF also struck several Hezbollah rocket launching sites used for imminent fire. A man and his dog were photographed crossing the rubble of a building at the strike site. Lebanon\'s overall death toll rose to <b>850 killed, including 100+ children</b>. (IDF / AFP / Times of Israel / Lebanese Health Ministry, 15 Mar)',date:'15 Mar'},
+
+  {lat:33.51,lng:35.37,type:'hzb',day:16,name:'UNIFIL Peacekeepers Fired Upon Three Times in Southern Lebanon',body:'UN peacekeepers with UNIFIL were <b>fired upon on three separate occasions</b> while conducting patrols near their bases in southern Lebanese towns of <b>Yatar, Dayr Kifa and Qallawiyah</b> on 15 March. UNIFIL stated the fire was "likely by non-state armed groups." The fire in Yatar came as close as five metres to the peacekeepers; two patrols returned fire in self-defence. Lebanon\'s Ministry of Foreign Affairs condemned the attacks as a "serious and unacceptable" violation of international law. (UNIFIL / Lebanese MFA / Times of Israel, 15 Mar)',date:'15 Mar'},
+
+  // ════════════════════════════════════════════════
+  // DAY 17 — 16 MARCH 2026
+  // ════════════════════════════════════════════════
+
+  {lat:35.72,lng:51.48,type:'us',day:17,name:'Tehran, Hamadan, Isfahan — IDF "Extensive Strikes" Continue into Day 17',body:'The IDF announced a new "extensive wave" of strikes on Iran on 16 March, targeting Iranian regime infrastructure in <b>Tehran, Hamadan and Isfahan</b>. Iran\'s army said it launched "powerful" drone strikes against Israeli security centres and police headquarters in response. Videos showed thick plumes of smoke over Isfahan. Iran said it had now fired approximately <b>700 missiles and 3,600 drones</b> at US and Israeli targets since the war began. Israel said it still had "thousands of targets" to hit and officials said the military was operating ahead of schedule. (IDF / CNN / AJ liveblog / NPR, 16 Mar)',date:'16 Mar'},
+
+  {lat:34.09,lng:49.70,type:'us',day:17,name:'Arak, Markazi Province — Residential Area Struck; 4 Killed, 1 Injured',body:'A US-Israeli airstrike hit a <b>residential area surrounding the city of Arak</b> in Iran\'s Markazi (Central) Province on 16 March, killing <b>at least four people</b> and injuring one, a Markazi provincial official confirmed to Mehr news agency. A separate strike hit the <b>Shahid Khomeini Boys\' School in Khomein</b> (also Markazi Province), causing heavy structural damage but no reported casualties — nearby houses were also damaged. (Mehr / Fars / AJ liveblog, 16 Mar)',date:'16 Mar'},
+
+  {lat:25.25,lng:55.37,type:'apt',day:17,name:'Dubai International Airport (DXB) — Iranian Drone Strikes Fuel Tank; Massive Fire; Flights Suspended 7+ Hours',body:'An <b>Iranian drone struck a fuel tank near Dubai International Airport</b> in the early hours of 16 March, triggering a <b>massive fire and the suspension of all flights</b> — the longest halt at DXB since the war began. The Dubai Civil Aviation Authority announced the suspension at 06:30 local time; Emirates cancelled multiple flights and diverted inbound services (including EK307 Beijing, EK319 Narita, EK407 Melbourne) to Al Maktoum Airport. Emirates resumed a limited schedule after 10:00hrs local. <b>No injuries reported.</b> It was the third incident at Dubai airport since 28 February. Iran had warned UAE ports and facilities were legitimate targets after claiming the US used UAE bases to strike Kharg Island. (Dubai Media Office / Reuters / Bloomberg / Arab News / CNBC, 16 Mar)',date:'16 Mar'},
+
+  {lat:25.12,lng:56.33,type:'oil',day:17,name:'Fujairah Industrial Area — Separate Drone Attack; Fire Reported',body:'A <b>separate drone attack was reported at Fujairah\'s industrial area</b> on 16 March, in addition to the Dubai airport incident on the same day. The UAE\'s Defense Ministry confirmed air defences were "currently responding to incoming missile and drone threats from Iran." Fujairah had already been struck on 14 March. (AJ liveblog / UAE MOD / Times of Israel, 16 Mar)',date:'16 Mar'},
+
+  {lat:24.42,lng:54.45,type:'iran',day:17,name:'Al Bahyah, Abu Dhabi — One Person Killed by Missile Striking Civilian Car',body:'A <b>missile struck a civilian car in the Al Bahyah area of Abu Dhabi</b> on 16 March, killing one person, Abu Dhabi\'s Media Office confirmed. The incident marked the first confirmed civilian fatality in Abu Dhabi since the early days of the war. UAE air defences were simultaneously engaging additional Iranian missiles and drones across the emirate. (Abu Dhabi Media Office / Middle East Eye, 16 Mar)',date:'16 Mar'},
+
+  {lat:33.33,lng:44.37,type:'iran',day:17,name:'Baghdad International Airport — Rockets Hit; 5 Wounded; US Embassy Facility Struck',body:'<b>Several rockets struck in and around Baghdad International Airport</b> on 16 March, including a facility used by the US Embassy, wounding <b>five people</b>, an Iraqi security source told Al Jazeera. Iraq\'s air defences were reported to be "confronting" a separate drone near the US Embassy compound. The US Embassy had already been targeted on 14 March when a missile destroyed its air defence system and struck the helipad. (Al Jazeera / CNN, 16 Mar)',date:'16 Mar'},
+
   // ════════════════════════════════════════════════
   // PERMANENT ASSETS (DAY 0)
   // ════════════════════════════════════════════════
@@ -1007,7 +1064,7 @@ function renderBaseline(){
   renderMarkers(data,null);
   lastMarkerKeys=new Set();
   (data.markers||[]).forEach(function(m){lastMarkerKeys.add(m.lat+'_'+m.lng+'_'+m.name);});
-  document.getElementById('last-updated').textContent='28 Feb – 15 Mar 2026 · '+(data.markers||[]).length+' incidents';
+  document.getElementById('last-updated').textContent='28 Feb – 16 Mar 2026 · '+(data.markers||[]).length+' incidents';
 }
 
 // BOOT
