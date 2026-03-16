@@ -86,13 +86,13 @@
     --day-badge-bg:rgba(192,39,26,0.12);
     --day-badge-border:rgba(192,39,26,0.35);
     --day-badge-col:#c0271a;
-    --icon-us-b:#c0271a; --icon-us-bg:rgba(192,39,26,0.15); --icon-us-c:#c0271a;
-    --icon-iran-b:#b06000; --icon-iran-bg:rgba(176,96,0,0.15); --icon-iran-c:#b06000;
-    --icon-hzb-b:#6a30a0; --icon-hzb-bg:rgba(106,48,160,0.15); --icon-hzb-c:#6a30a0;
-    --icon-navy-b:#1a5faa; --icon-navy-bg:rgba(26,95,170,0.15); --icon-navy-c:#1a5faa;
-    --icon-apt-b:#a020a0; --icon-apt-bg:rgba(160,32,160,0.15); --icon-apt-c:#a020a0;
-    --icon-oil-b:#9a7000; --icon-oil-bg:rgba(154,112,0,0.15); --icon-oil-c:#9a7000;
-    --icon-port-b:#0a8070; --icon-port-bg:rgba(10,128,112,0.15); --icon-port-c:#0a8070;
+    --icon-us-b:#c0271a; --icon-us-bg:#ffffff; --icon-us-c:#c0271a;
+    --icon-iran-b:#b06000; --icon-iran-bg:#ffffff; --icon-iran-c:#b06000;
+    --icon-hzb-b:#6a30a0; --icon-hzb-bg:#ffffff; --icon-hzb-c:#6a30a0;
+    --icon-navy-b:#1a5faa; --icon-navy-bg:#ffffff; --icon-navy-c:#1a5faa;
+    --icon-apt-b:#a020a0; --icon-apt-bg:#ffffff; --icon-apt-c:#a020a0;
+    --icon-oil-b:#9a7000; --icon-oil-bg:#ffffff; --icon-oil-c:#9a7000;
+    --icon-port-b:#0a8070; --icon-port-bg:#ffffff; --icon-port-c:#0a8070;
   }
   /* Light mode: keep header + footer dark — only map/panels go light */
   html[data-theme="light"] .header{background:#0c1420;border-bottom-color:#c0271a;}
@@ -322,7 +322,7 @@ function buildIcons(){
   var sw=light?'3':'2.5'; // svg stroke width — bolder for light
   var b=getCSSVar;
   // In light mode: use a subtle coloured drop-shadow instead of dark glow
-  function sh(col){return light?('0 1px 4px rgba(0,0,0,0.22),0 0 0 1px '+col+'44'):('0 0 10px '+col+'66,0 2px 6px rgba(0,0,0,.5)');}
+  function sh(col){return light?('0 1px 3px rgba(0,0,0,0.28),0 0 0 2px '+col):('0 0 10px '+col+'66,0 2px 6px rgba(0,0,0,.5)');}
   return {
     us:   circ('✕',b('--icon-us-b'),b('--icon-us-bg'),b('--icon-us-c'),s1,sh(b('--icon-us-b'))),
     iran: circ('▲',b('--icon-iran-b'),b('--icon-iran-bg'),b('--icon-iran-c'),s1,sh(b('--icon-iran-b'))),
@@ -334,24 +334,24 @@ function buildIcons(){
   };
 }
 var ICONS=buildIcons();
-var isDark=true;
-document.getElementById('theme-toggle').addEventListener('click',function(){
-  isDark=!isDark;
-  var html=document.documentElement;
+var isDark = true;
+document.getElementById('theme-toggle').addEventListener('click', function(){
+  isDark = !isDark;
+  var html = document.documentElement;
   if(isDark){
     html.removeAttribute('data-theme');
     tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png');
-    this.textContent='☀ Light';
+    this.textContent = '☀ Light';
   } else {
     html.setAttribute('data-theme','light');
     tileLayer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
-    this.textContent='● Dark';
+    this.textContent = '● Dark';
   }
   // Rebuild icons with new theme colours then re-render markers
   setTimeout(function(){
-    ICONS=buildIcons();
+    ICONS = buildIcons();
     if(currentMapData) applyFilter_inner(currentMapData);
-  },50);
+  }, 50);
 });
 var CATS={us:'US / Israel Strike',iran:'Iranian Retaliation',hzb:'Hezbollah / Lebanon',navy:'US Navy Asset',apt:'Airport Struck',oil:'Oil / Energy Infrastructure',port:'Port / Maritime Strike'};
 
@@ -1007,7 +1007,9 @@ function renderBaseline(){
 
   {lat:25.13,lng:56.33,type:'oil',day:15,name:'Fujairah, UAE — Fire at Major Bunkering Hub After Drone Interception Debris; 1 Injured',body:'A <b>fire broke out at Fujairah\'s major oil bunkering hub</b> on 14 March after debris from an intercepted drone fell on the facility. Fujairah\'s media office confirmed a <b>Jordanian citizen was lightly injured</b>. Civil defence forces worked to contain the fire. Reuters reported that <b>some oil-loading operations were suspended</b> in the aftermath. Fujairah is one of the world\'s largest bunkering ports, handling fuel for ships transiting the region. AFP captured smoke rising from the facility in a widely circulated photo. (Fujairah Media Office / Al Jazeera / AFP / Reuters, 14 Mar)',date:'14 Mar'},
 
-  {lat:28.93,lng:47.79,type:'iran',day:15,name:'Ahmad al-Jaber Air Base, Kuwait — Two Drones Strike Perimeter; 3 Soldiers Wounded',body:'<b>Two drones struck the perimeter of Ahmad al-Jaber Air Base</b> in southern Kuwait on 14 March, causing material damage and wounding <b>three army personnel</b> with minor injuries, Kuwait\'s Ministry of Defence confirmed. Air defences detected seven hostile drones in total; three were intercepted and destroyed, two fell outside the threat zone harmlessly, and two got through. Separately, <b>drones later struck Kuwait International Airport</b>, hitting its radar system but causing no casualties. The radar damage disrupted airport operations. (Kuwait MoD / Civil Aviation Authority / Al Jazeera / CNN, 14 Mar)',date:'14 Mar'},
+  {lat:28.93,lng:47.79,type:'iran',day:15,name:'Ahmad al-Jaber Air Base, Kuwait — Two Drones Strike Perimeter; 3 Soldiers Wounded',body:'<b>Two drones struck the perimeter of Ahmad al-Jaber Air Base</b> in southern Kuwait on 14 March, causing material damage and wounding <b>three army personnel</b> with minor injuries, Kuwait\'s Ministry of Defence confirmed. Air defences detected seven hostile drones in total; three were intercepted and destroyed, two fell outside the threat zone harmlessly, and two got through. (Kuwait MoD / Al Jazeera / CNN, 14 Mar)',date:'14 Mar'},
+
+  {lat:29.24,lng:47.97,type:'apt',day:15,name:'Kuwait International Airport (KWI) — Drones Hit Radar System; Operations Disrupted',body:'Separate from the Ahmad al-Jaber Air Base attack, <b>drones struck Kuwait International Airport on 14 March</b>, hitting its radar system and causing material damage. No casualties were reported, but the radar damage disrupted airport operations. Kuwait\'s Civil Aviation Authority confirmed the incident. It was the third confirmed attack on Kuwait\'s main airport during the war. (Kuwait Civil Aviation Authority / Al Jazeera / CNN, 14 Mar)',date:'14 Mar'},
 
   // ════════════════════════════════════════════════
   // DAY 16 — 15 MARCH 2026
@@ -1050,6 +1052,14 @@ function renderBaseline(){
   {lat:33.33,lng:44.37,type:'iran',day:17,name:'Baghdad International Airport — Rockets Hit; 5 Wounded; US Embassy Facility Struck',body:'<b>Several rockets struck in and around Baghdad International Airport</b> on 16 March, including a facility used by the US Embassy, wounding <b>five people</b>, an Iraqi security source told Al Jazeera. Iraq\'s air defences were reported to be "confronting" a separate drone near the US Embassy compound. The US Embassy had already been targeted on 14 March when a missile destroyed its air defence system and struck the helipad. (Al Jazeera / CNN, 16 Mar)',date:'16 Mar'},
 
   // ════════════════════════════════════════════════
+
+  {lat:25.25,lng:55.36,type:'apt',day:12,name:'Dubai International Airport (DXB) — Two Drones Fall Near Airport; 4 Injured',body:'Two Iranian drones fell <b>in the vicinity of Dubai International Airport</b> on 11 March, wounding <b>four people</b> (nationalities: Ghanaian, Indian and Bangladeshi), the Dubai Media Office confirmed. The airport closed briefly as air defence systems engaged. It was the second confirmed incident at DXB since the war began on 28 February. (Dubai Media Office / FDD / Reuters, 11 Mar)',date:'11 Mar'},
+
+  {lat:24.43,lng:54.46,type:'apt',day:12,name:'Abu Dhabi Old Airport — Fire After Drone Interception Debris; No Injuries',body:'A <b>fire broke out at Abu Dhabi\'s old airport</b> (Al Bateen Executive Airport area) on 11 March after air defence systems intercepted incoming targets and debris fell on the facility. The Abu Dhabi Media Office confirmed the fire was brought under control with no injuries. (Abu Dhabi Media Office / Al Jazeera, 11 Mar)',date:'11 Mar'},
+
+  {lat:26.27,lng:50.63,type:'apt',day:13,name:'Bahrain International Airport — Fuel Tanks Hit; Large Fire on Muharraq Island',body:'Iranian drones struck <b>fuel tanks at Bahrain International Airport on Muharraq Island</b> overnight 11–12 March, setting them ablaze and causing a <b>large fire visible across Manama</b>. Bahrain\'s authorities urged residents to stay indoors and close windows to avoid smoke. Gulf Air relocated its aircraft fleet to airports in Saudi Arabia as a precaution. Reuters captured smoke rising from the facility in widely circulated photographs. (Al Jazeera / Wikipedia Timeline / Reuters, 11–12 Mar)',date:'11-12 Mar'},
+
+  {lat:29.24,lng:47.97,type:'apt',day:13,name:'Kuwait International Airport (KWI) — Drones Cause Material Damage; Second Attack',body:'Iranian drones struck <b>Kuwait International Airport</b> on 12 March, causing material damage to the airport. No casualties were reported. Kuwait\'s Civil Aviation Authority confirmed the attack. It followed the initial Day 1 strike on 28 February and preceded a third attack on 14 March that damaged the radar system. (Kuwait Civil Aviation Authority / FDD / Al Jazeera, 12 Mar)',date:'12 Mar'},
   // PERMANENT ASSETS (DAY 0)
   // ════════════════════════════════════════════════
 
