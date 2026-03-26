@@ -130,14 +130,26 @@
   /* UPDATE BAR - REMOVED */
 
   /* DAY FILTER BAR */
-  .day-filter-bar{flex-shrink:0;background:var(--dfbar-bg);border-bottom:1px solid var(--border);padding:5px 20px;display:flex;align-items:center;gap:5px;z-index:998;flex-wrap:wrap;}
-  .df-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--df-label-col);margin-right:4px;flex-shrink:0;}
+  .day-filter-bar{flex-shrink:0;background:var(--dfbar-bg);border-bottom:1px solid var(--border);padding:4px 20px;display:flex;align-items:center;gap:8px;z-index:998;}
+  .df-label{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--df-label-col);flex-shrink:0;}
+  .df-sep{width:1px;height:16px;background:var(--df-sep-col);margin:0 2px;flex-shrink:0;}
+  .df-count{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:var(--df-count-col);margin-left:auto;flex-shrink:0;}
+  /* Arrow nav buttons */
+  .df-arrow{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;padding:3px 9px;border-radius:1px;border:1px solid var(--df-btn-border);background:transparent;color:var(--df-btn-col);cursor:pointer;transition:all 0.15s;flex-shrink:0;line-height:1;}
+  .df-arrow:hover:not(:disabled){border-color:var(--df-btn-hover-border);color:var(--df-btn-hover-col);}
+  .df-arrow:disabled{opacity:0.25;cursor:default;}
+  /* Dropdown select */
+  .df-select{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 28px 3px 10px;border-radius:1px;border:1px solid var(--df-btn-border);background:var(--dfbar-bg);color:var(--df-btn-hover-col);cursor:pointer;transition:border-color 0.15s;flex-shrink:0;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a9aaa'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;min-width:200px;}
+  .df-select:focus{outline:none;border-color:var(--ake-red);}
+  html[data-theme="light"] .df-select{background-color:var(--dfbar-bg);color:var(--df-btn-hover-col);}
+  /* "Jump to latest" pill */
+  .df-latest{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 9px;border-radius:1px;border:1px solid var(--ake-red);background:var(--df-btn-active-bg);color:var(--ake-red);cursor:pointer;transition:all 0.15s;flex-shrink:0;}
+  .df-latest:hover{background:rgba(192,39,26,0.28);}
+  /* Legacy df-btn kept for All Days button only */
   .df-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 11px;border-radius:1px;border:1px solid var(--df-btn-border);background:transparent;color:var(--df-btn-col);cursor:pointer;transition:all 0.15s;flex-shrink:0;}
   .df-btn:hover{border-color:var(--df-btn-hover-border);color:var(--df-btn-hover-col);}
   .df-btn.active{background:var(--df-btn-active-bg);border-color:var(--ake-red);color:var(--ake-red);}
   .df-btn.all.active{background:var(--df-btn-all-active-bg);border-color:var(--df-btn-all-active-border);color:var(--white);}
-  .df-sep{width:1px;height:16px;background:var(--df-sep-col);margin:0 2px;flex-shrink:0;}
-  .df-count{font-family:'Barlow Condensed',sans-serif;font-size:9px;letter-spacing:1px;color:var(--df-count-col);margin-left:auto;flex-shrink:0;}
 
   /* TYPE FILTER BAR */
   .type-filter-bar{flex-shrink:0;background:var(--dfbar-bg);border-top:1px solid var(--border);padding:4px 20px;display:flex;align-items:center;gap:5px;z-index:997;flex-wrap:wrap;}
@@ -219,8 +231,15 @@
 
 
   <div class="day-filter-bar" id="day-filter-bar">
-    <span class="df-label">Filter by Day</span>
-    <button class="df-btn all active" data-day="all" onclick="setDayFilter('all',this)">All Days</button>
+    <span class="df-label">Day</span>
+    <button class="df-btn all active" id="df-all-btn" onclick="setDayFilter('all',this)">All</button>
+    <div class="df-sep"></div>
+    <button class="df-arrow" id="df-prev" title="Previous day">&#8592;</button>
+    <select class="df-select" id="df-select" onchange="onDaySelectChange(this)">
+      <option value="all">— All Days —</option>
+    </select>
+    <button class="df-arrow" id="df-next" title="Next day">&#8594;</button>
+    <button class="df-latest" id="df-latest-btn" onclick="jumpToLatest()">Latest ▸</button>
     <div class="df-sep"></div>
     <span class="df-count" id="df-count"></span>
   </div>
@@ -269,10 +288,61 @@ var applyFilter = null; // set inside window.onload once map is ready
 
 function setDayFilter(day, btn){
   activeDay = (day === 'all') ? 'all' : parseInt(day);
-  document.querySelectorAll('.df-btn').forEach(function(b){ b.classList.remove('active'); });
-  if(btn) btn.classList.add('active');
+  // Sync All button state
+  var allBtn = document.getElementById('df-all-btn');
+  if(allBtn) allBtn.classList.toggle('active', activeDay === 'all');
+  // Sync dropdown
+  var sel = document.getElementById('df-select');
+  if(sel) sel.value = String(day);
+  updateArrows();
   if(applyFilter && currentMapData) applyFilter(currentMapData);
 }
+
+function onDaySelectChange(sel){
+  var v = sel.value;
+  if(v === 'all'){
+    setDayFilter('all', document.getElementById('df-all-btn'));
+  } else {
+    setDayFilter(parseInt(v), null);
+  }
+}
+
+function jumpToLatest(){
+  var sel = document.getElementById('df-select');
+  if(!sel || sel.options.length < 2) return;
+  // Last option (skipping the "all" option at index 0) is the latest day
+  var last = sel.options[sel.options.length - 1];
+  setDayFilter(parseInt(last.value), null);
+  sel.value = last.value;
+}
+
+function updateArrows(){
+  var sel = document.getElementById('df-select');
+  var prev = document.getElementById('df-prev');
+  var next = document.getElementById('df-next');
+  if(!sel || !prev || !next) return;
+  var idx = sel.selectedIndex;
+  prev.disabled = (idx <= 1); // idx 0 = "All Days", idx 1 = first real day
+  next.disabled = (idx === 0 || idx >= sel.options.length - 1);
+}
+
+document.getElementById('df-prev').addEventListener('click', function(){
+  var sel = document.getElementById('df-select');
+  if(!sel) return;
+  var idx = sel.selectedIndex;
+  // If on "All", jump to last day
+  if(idx === 0){ sel.selectedIndex = sel.options.length - 1; }
+  else if(idx > 1){ sel.selectedIndex = idx - 1; }
+  onDaySelectChange(sel);
+});
+
+document.getElementById('df-next').addEventListener('click', function(){
+  var sel = document.getElementById('df-select');
+  if(!sel) return;
+  var idx = sel.selectedIndex;
+  if(idx < sel.options.length - 1){ sel.selectedIndex = idx + 1; }
+  onDaySelectChange(sel);
+});
 
 function setTypeFilter(type, btn){
   activeType = type;
@@ -378,20 +448,22 @@ function rebuildDayButtons(markers){
   var days=new Set();
   markers.forEach(function(m){var d=m.day||(dateToDay(m.date)); if(d>0) days.add(d);});
   var sorted=Array.from(days).sort(function(a,b){return a-b;});
-  var bar=document.getElementById('day-filter-bar');
-  bar.querySelectorAll('.df-btn:not(.all),.df-sep:not(:first-of-type)').forEach(function(e){e.remove();});
-  var ce=document.getElementById('df-count');
-  bar.removeChild(ce);
+  var sel=document.getElementById('df-select');
+  // Clear all options after the "All Days" placeholder
+  while(sel.options.length > 1) sel.remove(1);
   sorted.forEach(function(d){
-    var sep=document.createElement('div'); sep.className='df-sep'; bar.appendChild(sep);
-    var b=document.createElement('button');
-    b.className='df-btn'+(activeDay===d?' active':'');
-    b.setAttribute('data-day',d);
-    b.textContent=getDayLabel(d);
-    b.onclick=(function(dd,bb){return function(){setDayFilter(dd,bb);};})(d,b);
-    bar.appendChild(b);
+    var opt=document.createElement('option');
+    opt.value=String(d);
+    // Count incidents for this day
+    var cnt=markers.filter(function(m){return (m.day||(dateToDay(m.date)))===d;}).length;
+    opt.textContent='Day '+d+' · '+DAY_DATES[d]+'  ('+cnt+' incidents)';
+    sel.appendChild(opt);
   });
-  bar.appendChild(ce);
+  // Restore selection
+  sel.value = activeDay === 'all' ? 'all' : String(activeDay);
+  // If value not found (new data set), fall back to all
+  if(sel.value !== String(activeDay)) sel.value='all';
+  updateArrows();
 }
 
 function applyFilter_inner(data){
@@ -1306,6 +1378,36 @@ function renderBaseline(){
 
   {lat:33.89,lng:35.49,type:'iran',day:26,name:'Sahel Alma, North Beirut — Shrapnel from Intercepted Iranian Missile Hits Christian Town',body:'Shrapnel from an intercepted Iranian missile struck <b>Sahel Alma, a Christian town north of Beirut</b>, punching a hole in a wall, a Jerusalem Post photo published on 24 March showed. The incident illustrated the continued risk to Lebanese civilians — including communities not aligned with Hezbollah — from fallout of Iranian missile salvos targeting Israel. Lebanon\'s death toll in Israeli strikes remained above 1,029. (JPOST live updates 24 Mar / Lebanese media, 24 Mar)',date:'25 Mar'},
 
+  // ════ GAP-FILLS (Days 22–26) ════
+
+  {lat:33.28,lng:35.43,type:'hzb',day:22,name:'Majdal Selm, South Lebanon — IDF Kills Radwan Forces Special Ops Commander Abu Khalil Barji + 2 Fighters',body:'The IDF announced it killed <b>Abu Khalil Barji</b>, the <b>commander of the Radwan Force\'s special operations unit</b>, in a strike in <b>Majdal Selm</b>, Bent Jbeil District on 21 March, along with two other Hezbollah fighters. The Radwan Force is Hezbollah\'s elite special operations unit originally built to conduct major ground attacks into Israel. The IDF also announced on 22 March it killed senior Hamas financier <b>Walid Mohammad Dib</b> in an unspecified area of Lebanon; Dib was responsible for transferring funds to Hamas branches in the West Bank, Lebanon and other countries, and directed attacks against Israel from Syria and Lebanon. (CTP-ISW 22 Mar report / IDF, 21–22 Mar)',date:'21–22 Mar'},
+
+  {lat:37.00,lng:35.43,type:'iran',day:22,name:'Incirlik AB, Turkey — Sirens Activated; Iranian Threat to US Forces in Turkey',body:'Sirens were activated at <b>Incirlik Air Base in Turkey</b>, which hosts American forces, on 21 March, Alma Research confirmed. This came amid IRGC threats to strike US positions across the region. Turkey was one of several NATO member states experiencing Iranian pressure during this phase of the war. Iran also announced it was prepared to allow passage for Japanese vessels through the Strait of Hormuz, in a move to selectively ease the blockade. (Alma 22 Mar report, 21 Mar)',date:'21 Mar'},
+
+  {lat:25.45,lng:55.55,type:'navy',day:22,name:'15nm North of Sharjah, UAE — UKMTO Reports Projectile Near Vessel; Classified as Suspicious Activity',body:'The UK Maritime Trade Operations (UKMTO) reported on 21 March that an <b>unknown projectile exploded near a vessel 15 nautical miles north of Sharjah</b>, UAE. The UKMTO later classified the incident as <b>"suspicious activity"</b> rather than a confirmed attack, as it could not confirm the intended target. The UKMTO had now recorded 21 confirmed maritime incidents in the Gulf since the war began, with the last confirmed Iranian vessel attack on March 11. (CTP-ISW 22 Mar report / UKMTO, 21 Mar)',date:'21 Mar'},
+
+  {lat:33.34,lng:44.40,type:'iran',day:22,name:'Baghdad — Shiite Militias Attack US Victoria Base Near BIAP; UAV Strikes Iraqi Intelligence HQ',body:'Over the weekend of 20–21 March, <b>Shiite militias attacked the US Victoria base near Baghdad International Airport</b> as well as a target near the Moroccan embassy in Iraq. An Iraqi security source separately told Al-Araby channel that a <b>UAV struck the Iraqi intelligence headquarters in Baghdad</b>, which cooperates with American advisors. Al Arabiya reported that NATO had decided to temporarily withdraw its forces from Iraq amid the deteriorating security situation. AJ Day 23 also confirmed the Islamic Resistance in Iraq claimed <b>21 attacks on US bases</b> across the country and the region in a 24-hour period. (Alma 22 Mar report / AJ Day 23, 21–22 Mar)',date:'21–22 Mar'},
+
+  {lat:29.37,lng:47.97,type:'iran',day:26,name:'Kuwait International Airport — Iranian Drones Ignite Fuel Depot; 6 Further Drones Intercepted',body:'<b>Iranian drones set a fuel depot at Kuwait International Airport on fire</b> on or around 25 March, while security forces intercepted another six drones, the Wikipedia Iran war timeline confirmed. The attack targeted Kuwait\'s main international airport, marking another direct strike on civilian aviation infrastructure. Kuwait had already suffered repeated attacks on its Mina Al-Ahmadi and Mina Abdullah refineries in previous days. (Wikipedia Timeline 2026 Iran war, 25 Mar)',date:'25 Mar'},
+
+  {lat:32.08,lng:34.84,type:'iran',day:26,name:'Bnei Brak / Tel Aviv — Iranian Missiles Hit Central Israel; Residents in Shelters; Kiryat Shmona Cluster Missile',body:'Iran struck <b>central Israel</b> during the night of 25 March with sirens sounding multiple times. A missile impact was confirmed in <b>Bnei Brak</b> — AP photos showed residents taking cover in bomb shelters as air raid sirens warned of incoming missiles. In northern Israel, a <b>cluster missile fired from Lebanon struck a neighbourhood in Kiryat Shmona</b>, prompting Israeli officers to search the area for unexploded submunitions, per AJ Day 26 report. An <b>Israeli woman was killed and two people were injured</b> by Hezbollah rockets in northern Israel. (AJ Day 26 / AP / Euronews, 25 Mar)',date:'25 Mar'},
+
+  // ════════════════════════════════════════════════
+  // DAY 27 — 26 MARCH 2026
+  // ════════════════════════════════════════════════
+
+  {lat:32.65,lng:51.68,type:'us',day:27,name:'Isfahan — IDF "Extensive Strikes"; Naval Research Centre Destroyed; Arms Factories Targeted',body:'The IDF announced it had completed a <b>"wave of extensive strikes in Isfahan"</b> on 26 March, destroying a <b>naval research centre</b> in the city. An NPR source said Israeli military is <b>speeding up targeting across Iran over the next 48 hours</b>, focusing on hitting Iran\'s arms factories as much as possible in case a ceasefire is declared. The Wikipedia Iran war timeline confirmed a naval research centre in Isfahan was destroyed and two <b>cruise missile production sites in Tehran</b> were also destroyed in overnight strikes. Iran confirmed 11 people killed in airstrikes in northwestern Iran. (NPR / IDF / Wikipedia timeline, 26 Mar)',date:'26 Mar'},
+
+  {lat:27.18,lng:56.27,type:'us',day:27,name:'Bandar Abbas — IRGCN Commander Alireza Tangsiri Killed; Senior Naval Officers Also Eliminated; Hormuz Blockade Architect Dead',body:'Israeli Defence Minister Israel Katz announced that <b>IDF killed IRGC Navy Commander Alireza Tangsiri</b> in a <b>"precise and lethal operation"</b> in Bandar Abbas overnight 25–26 March, along with <b>senior officers of the naval command</b>. Katz said Tangsiri was "the man directly responsible for the terrorist operation of mining and blocking the Strait of Hormuz." Tangsiri had led the IRGCN since 2018 and had been sanctioned by the US Treasury. His social media had been posting which ships were permitted through the strait. He had survived both the June 2025 and February 2026 assassination waves before being killed. Iran had no immediate official confirmation. His death removes the key architect of one of the worst disruptions to global oil markets in history. (IDF / Israeli DM Katz / AFP / Al Arabiya / AJ, 26 Mar)',date:'26 Mar'},
+
+  {lat:32.08,lng:34.80,type:'iran',day:27,name:'Tel Aviv / Central Israel — Iranian Missile Waves; Sirens 4+ Times; At Least One Impact; Kfar Qassem Struck',body:'Air raid sirens blared <b>at least four times</b> in central Israel on 26 March morning, including in Tel Aviv and Jerusalem, as Iran continued missile barrages. The IDF reported intercepting incoming fire but confirmed <b>at least one impact</b>. <b>Kfar Qassem</b>, an Arab-Israeli city east of Tel Aviv, was struck by a projectile — AFP photos showed residents surveying damage to a car in the city. Despite repeated sirens, casualties were low, with the IDF saying Iranian missile strikes were "growing less effective." (NPR / IDF / AFP via Irish Times, 26 Mar)',date:'26 Mar'},
+
+  {lat:24.45,lng:54.37,type:'iran',day:27,name:'Abu Dhabi, UAE — TWO PEOPLE KILLED by Debris from Intercepted Iranian Ballistic Missile',body:'<b>Two people were killed in Abu Dhabi</b> on 26 March by falling debris from an Iranian ballistic missile intercepted by UAE air defences, Abu Dhabi authorities confirmed. This raised the UAE\'s total war death toll to at least 10. The UAE Ministry of Defence reported it was intercepting drones and missiles from Iran throughout the morning, urging the public that "the sounds heard are the country\'s air defences in action." The incident was the deadliest single debris impact event in the UAE since the war began. (UAE authorities / CNN / Newsweek / CBS, 26 Mar)',date:'26 Mar'},
+
+  {lat:29.37,lng:47.97,type:'iran',day:27,name:'Kuwait — Missile and Drone Attacks; Iran Claims Strike on US Base; Saudi Arabia Intercepts 18 Drones',body:'Kuwait reported a new wave of <b>missile and drone attacks</b> on 26 March, with the government telling residents "any explosions heard are the result of air defence systems intercepting hostile targets." Iran claimed it had targeted <b>a US military base in Kuwait</b> as well as an air base used by US forces in Saudi Arabia with drones and missiles. <b>Saudi Arabia intercepted at least 18 drones</b> targeting various sites. Bahrain warned residents to take shelter as sirens were sounded. (CNN / CBS / Irish Times, 26 Mar)',date:'26 Mar'},
+
+  {lat:33.27,lng:35.55,type:'hzb',day:27,name:'South Lebanon — IDF Soldier Sgt. Ori Greenberg (21) Killed; Ground Invasion Preparations Intensify',body:'<b>Sgt. Ori Greenberg, 21</b>, was killed in southern Lebanon on 26 March, the IDF confirmed — named as the latest Israeli soldier killed in ground operations in Lebanon. Israel said its airstrikes were continuing in southern Lebanon "in advance of what Israeli officials say will be a \'prolonged\' ground invasion" targeting Hezbollah. Israeli Foreign Minister Gideon Saar urged the UN Security Council to condemn Hezbollah, saying the group had fired more than <b>3,500 missiles and drones at Israel since 2 March</b>. Lebanese casualties: <b>1,072 killed and 2,966 wounded</b> since 2 March, with 33 deaths in the last 24 hours (Lebanese Health Ministry). Canada and France continued calling on Israel to halt plans to occupy southern Lebanon. (NPR / IDF / Lebanese Health Ministry, 26 Mar)',date:'26 Mar'},
+
   // PERMANENT ASSETS (DAY 0)
   // ════════════════════════════════════════════════
 
@@ -1320,7 +1422,7 @@ function renderBaseline(){
   renderMarkers(data,null);
   lastMarkerKeys=new Set();
   (data.markers||[]).forEach(function(m){lastMarkerKeys.add(m.lat+'_'+m.lng+'_'+m.name);});
-  document.getElementById('last-updated').textContent='28 Feb – 25 Mar 2026 · '+(data.markers||[]).length+' incidents';
+  document.getElementById('last-updated').textContent='28 Feb – 26 Mar 2026 · '+(data.markers||[]).length+' incidents';
 }
 
 // BOOT
